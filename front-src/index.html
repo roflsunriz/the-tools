@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ツールボックス✨</title>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>ツールボックス✨</h1>
+            <nav class="tab-nav">
+                <button class="tab-button active" data-tab="converter">数値変換</button>
+                <button class="tab-button" data-tab="exchange">為替レート</button>
+                <button class="tab-button" data-tab="nicoid">ニコニコID</button>
+                <button class="tab-button" data-tab="timezone">時差変換</button>
+                <button class="tab-button" data-tab="battery">充電時間</button>
+                <button class="tab-button" data-tab="stove">ストーブ計算</button>
+                <button class="tab-button" data-tab="alarm">アラーム</button>
+                <button class="tab-button" data-tab="mini-json">ミニマムJSON</button>
+            </nav>
+        </header>
+
+        <main class="app-content">
+            <!-- 数値変換タブ -->
+            <div class="tab-content active" id="converter-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>数値変換</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="exchange-rate-box">
+                            現在のレート: 
+                            <span id="exchangeRateDisplay">取得中...</span>
+                            <button class="refresh-button">🔄</button>
+                        </div>
+                        <div class="toggle-switch-container">
+                            <div class="toggle-label">モード選択</div>
+                            <div class="toggle-switch-wrapper">
+                                <span class="mode-label currency-label">通貨変換</span>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="mode-toggle" class="toggle-input">
+                                    <label for="mode-toggle" class="toggle-label">
+                                        <span class="toggle-switch-button"></span>
+                                    </label>
+                                </div>
+                                <span class="mode-label parameter-label">AIパラメーター</span>
+                            </div>
+                        </div>
+                        <div class="currency-selector" id="currency-selector">
+                            <label><input type="radio" name="currency" value="JPY"> 円 → ドル</label>
+                            <label><input type="radio" name="currency" value="USD" checked> ドル → 円</label>
+                        </div>
+                        <div class="unit-selector" id="unit-selector" style="display: none;">
+                            <div class="unit-direction">
+                                <label><input type="radio" name="unit-direction" value="en-to-jp" checked> 英語 → 日本語</label>
+                                <label><input type="radio" name="unit-direction" value="jp-to-en"> 日本語 → 英語</label>
+                            </div>
+                            <select>
+                                <option value="Q">京 (Q)</option>
+                                <option value="T">兆 (T)</option>
+                                <option value="B">億 (B)</option>
+                                <option value="M">万 (M)</option>
+                                <option value="K">千 (K)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="converter-input" class="magic-input" placeholder="例: 1000円 または $15">
+                            <button id="convert-button" class="magic-button">変換</button>
+                        </div>
+                        <div id="converter-result" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 為替レートタブ -->
+            <div class="tab-content" id="exchange-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>リアルタイム為替レート</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="time-display" class="time-display"></div>
+                        <div id="grid-container" class="grid-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ニコニコIDタブ -->
+            <div class="tab-content" id="nicoid-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ニコニコ動画ID抽出</h2>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="nicoid-input" rows="10" placeholder="テキストを入力してください"></textarea>
+                        <div id="stats">文字数: 0 | 行数: 0</div>
+                        <div class="button-group">
+                            <button id="extract-button">IDを抽出</button>
+                            <button id="copy-button" style="display: none">IDをコピー</button>
+                            <button id="clear-button">クリア</button>
+                        </div>
+                        <div id="nicoid-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 時差変換タブ -->
+            <div class="tab-content" id="timezone-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>時差変換</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="timezone-converter">
+                            <div class="input-group">
+                                <input type="date" id="date-input" class="magic-input">
+                                <div class="input-group clockpicker" data-autoclose="true">
+                                    <input type="text" id="time-input" class="magic-input" placeholder="時間を選択">
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-time"></span>
+                                    </span>
+                                </div>
+                                <button id="reset-time" class="magic-button">現在時刻にリセット</button>
+                                <select id="timezone-select" class="magic-input">
+                                    <option value="America/Los_Angeles">Pacific Time (PT) (UTC-7)</option>
+                                    <option value="America/New_York">Eastern Time (ET) (UTC-4)</option>
+                                    <option value="Europe/London">London (GMT/BST) (UTC+0)</option>
+                                    <option value="Europe/Paris">Paris (CET/CEST) (UTC+1)</option>
+                                    <option value="Asia/Singapore">Singapore (SGT) (UTC+8)</option>
+                                    <option value="Australia/Sydney">Sydney (AEST/AEDT) (UTC+10/11)</option>
+                                </select>
+                                <button id="convert-timezone" class="magic-button">時差変換</button>
+                            </div>
+                            <div id="timezone-result" class="result-box"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 充電時間計算タブ -->
+            <div class="tab-content" id="battery-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>充電時間計算機</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="battery-calculator">
+                            <div class="input-group">
+                                <label>現在の充電率 (%)</label>
+                                <input type="number" id="current-charge" class="magic-input" value="0" min="0" max="100">
+                            </div>
+                            <div class="input-group">
+                                <label>バッテリー容量 (mAh)</label>
+                                <input type="number" id="battery-capacity" class="magic-input" value="4000" min="0">
+                            </div>
+                            <div class="input-mode-switch">
+                                <label><input type="radio" name="power-mode" value="watts" checked> 電力(W)で指定</label>
+                                <label><input type="radio" name="power-mode" value="current"> 電流(A)と電圧(V)で指定</label>
+                            </div>
+                            <div id="watts-input" class="input-group">
+                                <label>充電器出力 (W)</label>
+                                <input type="number" id="charger-watts" class="magic-input" value="20" min="0">
+                            </div>
+                            <div id="current-voltage-input" class="input-group" style="display: none;">
+                                <div>
+                                    <label>電流 (A)</label>
+                                    <input type="number" id="charger-current" class="magic-input" step="0.1" min="0">
+                                </div>
+                                <div>
+                                    <label>電圧 (V)</label>
+                                    <input type="number" id="charger-voltage" class="magic-input" step="0.1" min="0">
+                                </div>
+                            </div>
+                            <button id="calculate-charging" class="magic-button">充電時間を計算</button>
+                            <div id="battery-result" class="result-box"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ストーブ計算タブ -->
+            <div class="tab-content" id="stove-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ストーブ計算機</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="stove-calculator">
+                            <div class="input-group">
+                                <label>燃料の種類</label>
+                                <select id="fuel-type" class="magic-input"></select>
+                            </div>
+                            <div class="input-group">
+                                <label>ストーブの種類</label>
+                                <select id="stove-type" class="magic-input"></select>
+                            </div>
+                            <div class="input-group">
+                                <label>燃料体積 (L)</label>
+                                <input type="number" id="fuel-volume" class="magic-input" value="5" min="0">
+                            </div>
+                            <div class="input-group">
+                                <label>燃料密度 (kg/L)</label>
+                                <input type="number" id="fuel-density" class="magic-input" value="0.8" min="0" step="0.01" readonly>
+                            </div>
+                            <div class="input-group">
+                                <label>ストーブ効率</label>
+                                <input type="number" id="stove-efficiency" class="magic-input" value="0.8" min="0" max="1" step="0.01" readonly>
+                            </div>
+                            <div class="input-group">
+                                <label>ストーブ出力 (kW)</label>
+                                <input type="number" id="stove-power" class="magic-input" value="2.5" min="0" step="0.1" readonly>
+                            </div>
+                            <div class="input-group">
+                                <label>水量 (L)</label>
+                                <input type="number" id="water-volume" class="magic-input" value="5.7" min="0">
+                            </div>
+                            <button id="calculate-stove" class="magic-button">計算</button>
+                            <div id="fuel-result" class="resultボックス"></div>
+                            <div id="water-result" class="resultボックス"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アラームタブ -->
+            <div class="tab-content" id="alarm-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>音楽アラーム</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="alarm-form">
+                            <label for="music-file">音楽ファイルを選択:</label>
+                            <input type="file" id="music-file" accept="audio/*" required>
+                            <div>
+                                <label for="preset-select">プリセット時間:</label>
+                                <select id="preset-select">
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+                            <label for="alarm-time">アラームの時間を設定:</label>
+                            <input type="datetime-local" id="alarm-time" required>
+
+                            <label for="volume">音量:</label>
+                            <output id="volume-label">音量: 0.02</output>
+                            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.02">
+
+                            <div class="button-group">
+                                <button type="button" id="set-alarm-button">アラームを設定</button>
+                                <button type="button" id="stop-music-button">音楽を停止</button>
+                            </div>
+                        </form>
+                        <div id="alarm-message"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ミニマムJSONタブ -->
+            <div class="tab-content" id="mini-json-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ミニマム JSON（短キー + minify）</h2>
+                    </div>
+                    <div class="card-body mini-json-body">
+                        <p class="mini-json-description">重複しているキーのみを短キーに置き換えて凡例を添付し、さらにminifyしてトークン削減を狙います。</p>
+                        <div class="input-group">
+                            <label for="mini-json-input">変換したいJSON</label>
+                            <textarea id="mini-json-input" rows="10" placeholder='{"description":"テキスト","time":"2024-08-01T10:00:00Z"}'></textarea>
+                        </div>
+                        <div class="button-group mini-json-actions">
+                            <button type="button" class="magic-button" id="mini-json-run">短縮 + minify</button>
+                            <button type="button" class="magic-button" id="mini-json-copy" style="display: none;">結果をコピー</button>
+                            <button type="button" id="mini-json-clear">クリア</button>
+                        </div>
+                        <div id="mini-json-error" class="mini-json-error" style="display: none;"></div>
+                        <div class="mini-json-layout">
+                            <div class="mini-json-panel">
+                                <div class="mini-json-panel-header">
+                                    <h3>短縮キー凡例</h3>
+                                    <button type="button" class="magic-button mini-json-legend-copy" id="mini-json-copy-legend" style="display: none;">凡例をコピー</button>
+                                </div>
+                                <div id="mini-json-legend" class="mini-json-legend"></div>
+                            </div>
+                            <div class="mini-json-panel">
+                                <h3>整形ビュー</h3>
+                                <textarea id="mini-json-output" rows="10" readonly></textarea>
+                            </div>
+                            <div class="mini-json-panel">
+                                <h3>ミニマムJSON（コピー用）</h3>
+                                <textarea id="mini-json-minified" rows="10" readonly></textarea>
+                            </div>
+                        </div>
+                        <div id="mini-json-summary" class="mini-json-summary"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/front-src/main.ts"></script>
+</body>
+</html> 

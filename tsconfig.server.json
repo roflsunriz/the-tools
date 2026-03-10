@@ -1,0 +1,15 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"outDir": "server-dist",
+		"allowJs": false,
+		"checkJs": false,
+		"lib": ["ES2020"],
+		"types": ["node"],
+		"rootDir": "server-src"
+	},
+	"include": ["server-src/server.ts"],
+	"exclude": ["node_modules"]
+}
+
+

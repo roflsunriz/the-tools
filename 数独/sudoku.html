@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>数独グリッド</title>
+    <style>
+      /* 盤面全体 */
+      .sudoku {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+        width: 360px; /* 例として360px四方 */
+        height: 360px;
+        border: 3px solid #000; /* 外枠 */
+      }
+
+      /* 各セル */
+      .cell {
+        border: 1px solid #000; /* 基本の枠線 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+      }
+
+      /* 3セルごとの縦ブロック境界（太い右枠線） */
+      .cell:nth-child(3n) {
+        border-right: 3px solid #000;
+      }
+
+      /* 3セルごとの横ブロック境界（太い下枠線） */
+      .cell:nth-child(n + 19):nth-child(-n + 27),
+      .cell:nth-child(n + 46):nth-child(-n + 54) {
+        border-bottom: 3px solid #000;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>数独のルール</h1>
+    <ol>
+      <li>
+        まだ数字の入っていないマスに1から9までの数字のどれかを1つずつ入れましょう。0（ゼロ）は使いません。
+      </li>
+      <li>
+        9行の各1行ずつ、9列の各1列ずつ、太線で囲まれた3x3のブロック（9つあります）のどれにも、1から9までの数字が1つずつ入るようにします。
+      </li>
+    </ol>
+    <div class="sudoku">
+      <div class="cell" id="c1"></div>
+      <div class="cell" id="c2">1</div>
+      <div class="cell" id="c3"></div>
+      <div class="cell" id="c4"></div>
+      <div class="cell" id="c5">4</div>
+      <div class="cell" id="c6"></div>
+      <div class="cell" id="c7"></div>
+      <div class="cell" id="c8">5</div>
+      <div class="cell" id="c9"></div>
+      <div class="cell" id="c10">7</div>
+      <div class="cell" id="c11"></div>
+      <div class="cell" id="c12"></div>
+      <div class="cell" id="c13"></div>
+      <div class="cell" id="c14"></div>
+      <div class="cell" id="c15">5</div>
+      <div class="cell" id="c16"></div>
+      <div class="cell" id="c17"></div>
+      <div class="cell" id="c18"></div>
+      <div class="cell" id="c19"></div>
+      <div class="cell" id="c20"></div>
+      <div class="cell" id="c21">6</div>
+      <div class="cell" id="c22">3</div>
+      <div class="cell" id="c23"></div>
+      <div class="cell" id="c24"></div>
+      <div class="cell" id="c25"></div>
+      <div class="cell" id="c26"></div>
+      <div class="cell" id="c27">2</div>
+      <div class="cell" id="c28">8</div>
+      <div class="cell" id="c29"></div>
+      <div class="cell" id="c30"></div>
+      <div class="cell" id="c31">2</div>
+      <div class="cell" id="c32"></div>
+      <div class="cell" id="c33"></div>
+      <div class="cell" id="c34">9</div>
+      <div class="cell" id="c35"></div>
+      <div class="cell" id="c36"></div>
+      <div class="cell" id="c37"></div>
+      <div class="cell" id="c38">5</div>
+      <div class="cell" id="c39"></div>
+      <div class="cell" id="c40"></div>
+      <div class="cell" id="c41"></div>
+      <div class="cell" id="c42"></div>
+      <div class="cell" id="c43"></div>
+      <div class="cell" id="c44">6</div>
+      <div class="cell" id="c45"></div>
+      <div class="cell" id="c46"></div>
+      <div class="cell" id="c47"></div>
+      <div class="cell" id="c48">2</div>
+      <div class="cell" id="c49"></div>
+      <div class="cell" id="c50"></div>
+      <div class="cell" id="c51">7</div>
+      <div class="cell" id="c52"></div>
+      <div class="cell" id="c53"></div>
+      <div class="cell" id="c54">3</div>
+      <div class="cell" id="c55">9</div>
+      <div class="cell" id="c56"></div>
+      <div class="cell" id="c57"></div>
+      <div class="cell" id="c58"></div>
+      <div class="cell" id="c59"></div>
+      <div class="cell" id="c60">1</div>
+      <div class="cell" id="c61">8</div>
+      <div class="cell" id="c62"></div>
+      <div class="cell" id="c63"></div>
+      <div class="cell" id="c64"></div>
+      <div class="cell" id="c65"></div>
+      <div class="cell" id="c66"></div>
+      <div class="cell" id="c67">6</div>
+      <div class="cell" id="c68"></div>
+      <div class="cell" id="c69"></div>
+      <div class="cell" id="c70"></div>
+      <div class="cell" id="c71"></div>
+      <div class="cell" id="c72">7</div>
+      <div class="cell" id="c73"></div>
+      <div class="cell" id="c74">3</div>
+      <div class="cell" id="c75"></div>
+      <div class="cell" id="c76"></div>
+      <div class="cell" id="c77">8</div>
+      <div class="cell" id="c78"></div>
+      <div class="cell" id="c79"></div>
+      <div class="cell" id="c80">4</div>
+      <div class="cell" id="c81"></div>
+    </div>
+  </body>
+</html>

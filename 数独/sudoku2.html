@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>数独グリッド2</title>
+    <style>
+      /* 盤面全体 */
+      .sudoku {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+        width: 360px; /* 例として360px四方 */
+        height: 360px;
+        border: 3px solid #000; /* 外枠 */
+      }
+
+      /* 各セル */
+      .cell {
+        border: 1px solid #000; /* 基本の枠線 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+      }
+
+      /* 3セルごとの縦ブロック境界（太い右枠線） */
+      .cell:nth-child(3n) {
+        border-right: 3px solid #000;
+      }
+
+      /* 3セルごとの横ブロック境界（太い下枠線） */
+      .cell:nth-child(n + 19):nth-child(-n + 27),
+      .cell:nth-child(n + 46):nth-child(-n + 54) {
+        border-bottom: 3px solid #000;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>数独のルール</h1>
+    <ol>
+      <li>
+        まだ数字の入っていないマスに1から9までの数字のどれかを1つずつ入れましょう。0（ゼロ）は使いません。
+      </li>
+      <li>
+        9行の各1行ずつ、9列の各1列ずつ、太線で囲まれた3x3のブロック（9つあります）のどれにも、1から9までの数字が1つずつ入るようにします。
+      </li>
+    </ol>
+    <div class="sudoku">
+      <!-- 1行目 -->
+       <!-- 1マス目 -->
+      <div class="cell" id="c1">1</div>
+      <div class="cell" id="c2"></div>
+      <div class="cell" id="c3"></div>
+      <!-- 2マス目 -->
+      <div class="cell" id="c4"></div>
+      <div class="cell" id="c5">2</div>
+      <div class="cell" id="c6"></div>
+      <!-- 3マス目 -->
+      <div class="cell" id="c7"></div>
+      <div class="cell" id="c8">9</div>
+      <div class="cell" id="c9"></div>
+      <!-- 2行目 -->
+       <!-- 4マス目 -->
+      <div class="cell" id="c10"></div>
+      <div class="cell" id="c11"></div>
+      <div class="cell" id="c12">7</div>
+      <!-- 5マス目 -->
+      <div class="cell" id="c13">3</div>
+      <div class="cell" id="c14"></div>
+      <div class="cell" id="c15"></div>
+      <!-- 6マス目 -->
+      <div class="cell" id="c16"></div>
+      <div class="cell" id="c17"></div>
+      <div class="cell" id="c18">4</div>
+      <!-- 3行目 -->
+      <!-- 7マス目 -->
+      <div class="cell" id="c19"></div>
+      <div class="cell" id="c20"></div>
+      <div class="cell" id="c21"></div>
+      <!-- 8マス目 -->
+      <div class="cell" id="c22"></div>
+      <div class="cell" id="c23"></div>
+      <div class="cell" id="c24">8</div>
+      <!-- 9マス目 -->
+      <div class="cell" id="c25">2</div>
+      <div class="cell" id="c26"></div>
+      <div class="cell" id="c27"></div>
+      <!-- 4行目 -->
+       <!-- 10マス目 -->
+      <div class="cell" id="c28"></div>
+      <div class="cell" id="c29"></div>
+      <div class="cell" id="c30">5</div>
+      <!-- 11マス目 -->
+      <div class="cell" id="c31">7</div>
+      <div class="cell" id="c32"></div>
+      <div class="cell" id="c33"></div>
+      <!-- 12マス目 -->
+      <div class="cell" id="c34"></div>
+      <div class="cell" id="c35"></div>
+      <div class="cell" id="c36">6</div>
+      <!-- 5行目 -->
+      <!-- 13マス目 -->
+      <div class="cell" id="c37"></div>
+      <div class="cell" id="c38">9</div>
+      <div class="cell" id="c39"></div>
+      <!-- 14マス目 -->
+      <div class="cell" id="c40"></div>
+      <div class="cell" id="c41"></div>
+      <div class="cell" id="c42"></div>
+      <!-- 15マス目 -->
+      <div class="cell" id="c43"></div>
+      <div class="cell" id="c44">5</div>
+      <div class="cell" id="c45"></div>
+      <!-- 6行目 -->
+      <!-- 16マス目 -->
+      <div class="cell" id="c46">8</div>
+      <div class="cell" id="c47"></div>
+      <div class="cell" id="c48"></div>
+      <!-- 17マス目 -->
+      <div class="cell" id="c49"></div>
+      <div class="cell" id="c50"></div>
+      <div class="cell" id="c51">4</div>
+      <!-- 18マス目 -->
+      <div class="cell" id="c52">1</div>
+      <div class="cell" id="c53"></div>
+      <div class="cell" id="c54"></div>
+      <!-- 7行目 -->
+       <!-- 19マス目 -->
+      <div class="cell" id="c55"></div>
+      <div class="cell" id="c56"></div>
+      <div class="cell" id="c57">6</div>
+      <!-- 20マス目 -->
+      <div class="cell" id="c58">5</div>
+      <div class="cell" id="c59"></div>
+      <div class="cell" id="c60"></div>
+      <!-- 21マス目 -->
+      <div class="cell" id="c61"></div>
+      <div class="cell" id="c62"></div>
+      <div class="cell" id="c63"></div>
+      <!-- 8行目 -->
+      <!-- 22マス目 -->
+      <div class="cell" id="c64">5</div>
+      <div class="cell" id="c65"></div>
+      <div class="cell" id="c66"></div>
+      <!-- 23マス目 -->
+      <div class="cell" id="c67"></div>
+      <div class="cell" id="c68"></div>
+      <div class="cell" id="c69">3</div>
+      <!-- 24マス目 -->
+      <div class="cell" id="c70">4</div>
+      <div class="cell" id="c71"></div>
+      <div class="cell" id="c72"></div>
+      <!-- 9行目 -->
+      <!-- 25マス目 -->
+      <div class="cell" id="c73"></div>
+      <div class="cell" id="c74">2</div>
+      <div class="cell" id="c75"></div>
+      <!-- 26マス目 -->
+      <div class="cell" id="c76"></div>
+      <div class="cell" id="c77">9</div>
+      <div class="cell" id="c78"></div>
+      <!-- 27マス目 -->
+      <div class="cell" id="c79"></div>
+      <div class="cell" id="c80"></div>
+      <div class="cell" id="c81">1</div>
+    </div>
+  </body>
+</html>

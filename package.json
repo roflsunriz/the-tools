@@ -1,0 +1,39 @@
+{
+  "name": "localhtml",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "type-check": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "dev": "ts-node server.ts",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build:frontend": "vite build",
+    "build": "npm run build:server && npm run build:frontend",
+    "start:prod": "node server-dist/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "clockpicker": "^0.0.7",
+    "express": "^5.2.1",
+    "jquery": "^3.7.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jquery": "^3.5.33",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vite-plugin-legacy": "^2.1.0"
+  }
+}
