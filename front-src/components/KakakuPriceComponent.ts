@@ -18,6 +18,7 @@ const ITEMS: readonly KakakuItem[] = [
 	{ id: 'K0001582702', label: 'K0001582702(Memory,48000)' },
 	{ id: 'K0001659804', label: 'K0001659804(Memory,48000)' },
 	{ id: 'K0001656656', label: 'K0001656656(SSD(NVMe),8TB)' },
+	{ id: 'K0001708193', label: 'K0001708193(SSD(NVMe),8TB)' },
 ];
 
 const CACHE_KEY_PREFIX = 'kakaku_price_';
