@@ -11,12 +11,13 @@ interface KakakuItem {
 }
 
 const ITEMS: readonly KakakuItem[] = [
-	{ id: 'K0001521544', label: 'K0001521544' },
-	{ id: 'K0001573623', label: 'K0001573623' },
-	{ id: 'K0001521549', label: 'K0001521549' },
-	{ id: 'K0001582710', label: 'K0001582710' },
-	{ id: 'K0001582702', label: 'K0001582702' },
-	{ id: 'K0001659804', label: 'K0001659804' },
+	{ id: 'K0001521544', label: 'K0001521544(Memory,44800)' },
+	{ id: 'K0001573623', label: 'K0001573623(Memory,52800)' },
+	{ id: 'K0001521549', label: 'K0001521549(Memory,44800)' },
+	{ id: 'K0001582710', label: 'K0001582710(Memory,54400)' },
+	{ id: 'K0001582702', label: 'K0001582702(Memory,48000)' },
+	{ id: 'K0001659804', label: 'K0001659804(Memory,48000)' },
+	{ id: 'K0001656656', label: 'K0001656656(SSD(NVMe),8TB)' },
 ];
 
 const CACHE_KEY_PREFIX = 'kakaku_price_';
