@@ -13,20 +13,38 @@ const FALLBACK_IDS: readonly string[] = [
 ];
 
 const CACHE_KEY_PREFIX = 'kakaku_price_';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const TTL_PREF_KEY = 'kakaku_ttl_days';
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_TTL_DAYS = 1;
+const MIN_TTL_DAYS = 1;
+const MAX_TTL_DAYS = 7;
+const PROACTIVE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1時間ごとにTTL超過チェック
 
-function readLocalCache(productId: string): KakakuPriceData | null {
+function clampTtl(n: number): number {
+	return Math.max(MIN_TTL_DAYS, Math.min(MAX_TTL_DAYS, Math.round(n)));
+}
+
+function loadTtlPref(): number {
+	try {
+		const raw = localStorage.getItem(TTL_PREF_KEY);
+		if (raw !== null) return clampTtl(Number(raw));
+	} catch { /* ignore */ }
+	return DEFAULT_TTL_DAYS;
+}
+
+function saveTtlPref(days: number): void {
+	try { localStorage.setItem(TTL_PREF_KEY, String(days)); } catch { /* ignore */ }
+}
+
+function readLocalCache(productId: string, ttlMs: number): KakakuCacheEntry | null {
 	try {
 		const raw = localStorage.getItem(`${CACHE_KEY_PREFIX}${productId}`);
 		if (!raw) return null;
-		const entry: KakakuCacheEntry = JSON.parse(raw) as KakakuCacheEntry;
-		if (Date.now() - entry.cachedAt < CACHE_TTL_MS) {
-			return entry.data;
+		const entry = JSON.parse(raw) as KakakuCacheEntry;
+		if (Date.now() - entry.cachedAt < ttlMs) {
+			return entry;
 		}
-		localStorage.removeItem(`${CACHE_KEY_PREFIX}${productId}`);
-	} catch {
-		/* corrupt cache */
-	}
+	} catch { /* corrupt */ }
 	return null;
 }
 
@@ -34,9 +52,17 @@ function writeLocalCache(productId: string, data: KakakuPriceData): void {
 	try {
 		const entry: KakakuCacheEntry = { data, cachedAt: Date.now() };
 		localStorage.setItem(`${CACHE_KEY_PREFIX}${productId}`, JSON.stringify(entry));
-	} catch {
-		/* quota exceeded */
-	}
+	} catch { /* quota exceeded */ }
+}
+
+function readStaleCacheTimestamp(productId: string): number | null {
+	try {
+		const raw = localStorage.getItem(`${CACHE_KEY_PREFIX}${productId}`);
+		if (!raw) return null;
+		const entry = JSON.parse(raw) as KakakuCacheEntry;
+		return entry.cachedAt;
+	} catch { /* corrupt */ }
+	return null;
 }
 
 export class KakakuPriceComponent {
@@ -47,6 +73,11 @@ export class KakakuPriceComponent {
 	private currentPriceEl!: HTMLElement;
 	private refreshBtn!: HTMLButtonElement;
 	private fetchedAtEl!: HTMLElement;
+	private ttlSlider!: HTMLInputElement;
+	private ttlLabel!: HTMLOutputElement;
+	private ttlDays: number = DEFAULT_TTL_DAYS;
+	private checkTimer: ReturnType<typeof setInterval> | null = null;
+	private lastLoadedProductId: string | null = null;
 
 	public init(): void {
 		this.canvas = document.getElementById('kakaku-chart') as HTMLCanvasElement;
@@ -55,12 +86,46 @@ export class KakakuPriceComponent {
 		this.currentPriceEl = document.getElementById('kakaku-current-price') as HTMLElement;
 		this.refreshBtn = document.getElementById('kakaku-refresh') as HTMLButtonElement;
 		this.fetchedAtEl = document.getElementById('kakaku-fetched-at') as HTMLElement;
+		this.ttlSlider = document.getElementById('kakaku-ttl') as HTMLInputElement;
+		this.ttlLabel = document.getElementById('kakaku-ttl-label') as HTMLOutputElement;
+
+		this.ttlDays = loadTtlPref();
+		this.ttlSlider.value = String(this.ttlDays);
+		this.updateTtlLabel();
+
+		this.ttlSlider.addEventListener('input', () => {
+			this.ttlDays = clampTtl(Number(this.ttlSlider.value));
+			this.updateTtlLabel();
+			saveTtlPref(this.ttlDays);
+		});
 
 		this.refreshBtn.addEventListener('click', () => {
 			void this.loadWithFallback(true);
 		});
 
 		void this.loadWithFallback(false);
+
+		this.checkTimer = setInterval(() => {
+			void this.proactiveRefreshCheck();
+		}, PROACTIVE_CHECK_INTERVAL_MS);
+	}
+
+	private updateTtlLabel(): void {
+		this.ttlLabel.textContent = `${String(this.ttlDays)}日`;
+	}
+
+	private get ttlMs(): number {
+		return this.ttlDays * ONE_DAY_MS;
+	}
+
+	private async proactiveRefreshCheck(): Promise<void> {
+		if (!this.lastLoadedProductId) return;
+
+		const cachedAt = readStaleCacheTimestamp(this.lastLoadedProductId);
+		if (cachedAt === null || Date.now() - cachedAt >= this.ttlMs) {
+			console.log('[kakaku] TTL exceeded — proactive refresh');
+			await this.loadWithFallback(true);
+		}
 	}
 
 	private async loadWithFallback(forceRefresh: boolean): Promise<void> {
@@ -75,6 +140,7 @@ export class KakakuPriceComponent {
 				if (data.chartData.length === 0) {
 					throw new Error('Empty chart data');
 				}
+				this.lastLoadedProductId = productId;
 				this.renderChart(data);
 				this.setStatus('', 'ok');
 				this.refreshBtn.disabled = false;
@@ -91,14 +157,15 @@ export class KakakuPriceComponent {
 
 	private async fetchData(productId: string, forceRefresh: boolean): Promise<KakakuPriceData> {
 		if (!forceRefresh) {
-			const cached = readLocalCache(productId);
+			const cached = readLocalCache(productId, this.ttlMs);
 			if (cached) {
 				console.log(`[kakaku] localStorage cache hit: ${productId}`);
-				return cached;
+				return cached.data;
 			}
 		}
 
-		const res = await fetch(`/api/kakaku-price/${encodeURIComponent(productId)}`);
+		const url = `/api/kakaku-price/${encodeURIComponent(productId)}?ttl=${String(this.ttlDays)}`;
+		const res = await fetch(url);
 		if (!res.ok) {
 			const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 			throw new Error(typeof body['error'] === 'string' ? body['error'] : `HTTP ${String(res.status)}`);

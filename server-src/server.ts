@@ -27,8 +27,17 @@ interface CacheEntry {
 	cachedAt: number;
 }
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1日
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_TTL_DAYS = 1;
+const MIN_TTL_DAYS = 1;
+const MAX_TTL_DAYS = 7;
 const priceCache = new Map<string, CacheEntry>();
+
+function clampTtlDays(raw: unknown): number {
+	const n = Number(raw);
+	if (!Number.isFinite(n)) return DEFAULT_TTL_DAYS;
+	return Math.max(MIN_TTL_DAYS, Math.min(MAX_TTL_DAYS, Math.round(n)));
+}
 
 function extractChartData(html: string): ChartEntry[] {
 	const match = html.match(/var\s+chartData\s*=\s*\[([\s\S]*?)\];/);
@@ -65,10 +74,11 @@ function extractProductName(html: string): string {
 		.trim();
 }
 
-async function fetchKakakuPrice(productId: string): Promise<KakakuPriceData> {
+async function fetchKakakuPrice(productId: string, ttlDays: number): Promise<KakakuPriceData> {
+	const ttlMs = ttlDays * ONE_DAY_MS;
 	const cached = priceCache.get(productId);
-	if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-		console.log(`[kakaku] cache hit: ${productId}`);
+	if (cached && Date.now() - cached.cachedAt < ttlMs) {
+		console.log(`[kakaku] cache hit: ${productId} (ttl=${String(ttlDays)}d)`);
 		return cached.data;
 	}
 
@@ -122,7 +132,9 @@ app.get('/api/kakaku-price/:productId', (req: Request, res: Response) => {
 		return;
 	}
 
-	fetchKakakuPrice(productId)
+	const ttlDays = clampTtlDays(req.query['ttl']);
+
+	fetchKakakuPrice(productId, ttlDays)
 		.then(data => {
 			res.json(data);
 		})

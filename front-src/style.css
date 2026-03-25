@@ -688,6 +688,31 @@ textarea {
     margin-left: auto;
 }
 
+.kakaku-ttl-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 0.9em;
+}
+
+.kakaku-ttl-row label {
+    white-space: nowrap;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.kakaku-ttl-row input[type="range"] {
+    flex: 0 1 180px;
+    accent-color: var(--primary-color);
+}
+
+.kakaku-ttl-row output {
+    min-width: 2.5em;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
     #alarm-form {
