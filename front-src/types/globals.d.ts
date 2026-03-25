@@ -8,6 +8,7 @@ declare global {
 	var BatteryComponent: any;
 	var StoveComponent: any;
 	var AlarmComponent: any;
+	var KakakuPriceComponent: any;
 	var $: JQueryStatic;
 	var jQuery: JQueryStatic;
 }

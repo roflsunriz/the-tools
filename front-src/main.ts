@@ -50,6 +50,7 @@ import { BatteryComponent } from './components/BatteryComponent.ts';
 import { StoveComponent } from './components/StoveComponent.ts';
 import { AlarmComponent } from './components/AlarmComponent.ts';
 import { MiniJsonComponent } from './components/MiniJsonComponent.ts';
+import { KakakuPriceComponent } from './components/KakakuPriceComponent.ts';
 
 const bootstrap = () => {
 	console.log('[boot] start');
@@ -62,6 +63,7 @@ const bootstrap = () => {
 	const stove = new StoveComponent();
 	const alarm = new AlarmComponent();
 	const miniJson = new MiniJsonComponent();
+	const kakakuPrice = new KakakuPriceComponent();
 
 	converter.init();
 	exchange.init();
@@ -71,6 +73,7 @@ const bootstrap = () => {
 	stove.init();
 	alarm.init();
 	miniJson.init();
+	kakakuPrice.init();
 	console.log('[boot] initialized');
 };
 

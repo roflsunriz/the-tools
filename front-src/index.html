@@ -18,6 +18,7 @@
                 <button class="tab-button" data-tab="stove">ストーブ計算</button>
                 <button class="tab-button" data-tab="alarm">アラーム</button>
                 <button class="tab-button" data-tab="mini-json">ミニマムJSON</button>
+                <button class="tab-button" data-tab="kakaku-price">価格推移</button>
             </nav>
         </header>
 
@@ -292,6 +293,24 @@
                             </div>
                         </div>
                         <div id="mini-json-summary" class="mini-json-summary"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- 価格推移タブ -->
+            <div class="tab-content" id="kakaku-price-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>価格推移グラフ</h2>
+                        <button id="kakaku-refresh" class="refresh-button">🔄</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="kakaku-status" class="kakaku-status"></div>
+                        <div id="kakaku-product-name" class="kakaku-product-name"></div>
+                        <div id="kakaku-current-price" class="kakaku-current-price"></div>
+                        <div class="kakaku-chart-container">
+                            <canvas id="kakaku-chart"></canvas>
+                        </div>
+                        <div id="kakaku-fetched-at" class="kakaku-fetched-at"></div>
                     </div>
                 </div>
             </div>

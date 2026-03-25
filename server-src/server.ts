@@ -1,9 +1,137 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 
 const app = express();
 const PORT = 65505; // 8080と8081は使えないので65505番を使うのじゃ
+
+// ---------- kakaku.com 価格推移プロキシ ----------
+
+interface ChartEntry {
+	date: string;
+	aveprice: number;
+	lowprice: number;
+}
+
+interface KakakuPriceData {
+	productId: string;
+	productName: string;
+	currentPrice: number;
+	chartData: ChartEntry[];
+	fetchedAt: string;
+}
+
+interface CacheEntry {
+	data: KakakuPriceData;
+	cachedAt: number;
+}
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1日
+const priceCache = new Map<string, CacheEntry>();
+
+function extractChartData(html: string): ChartEntry[] {
+	const match = html.match(/var\s+chartData\s*=\s*\[([\s\S]*?)\];/);
+	if (!match?.[1]) return [];
+
+	const entries: ChartEntry[] = [];
+	const entryPattern = /\{\s*date\s*:\s*'([^']+)'\s*,\s*aveprice\s*:\s*(\d+)\s*,\s*lowprice\s*:\s*(\d+)\s*\}/g;
+	let m: RegExpExecArray | null;
+	while ((m = entryPattern.exec(match[1])) !== null) {
+		const [, dateRaw, ave, low] = m;
+		if (dateRaw && ave && low) {
+			entries.push({
+				date: dateRaw.replace(/\//g, '-'),
+				aveprice: parseInt(ave, 10),
+				lowprice: parseInt(low, 10),
+			});
+		}
+	}
+	return entries;
+}
+
+function extractCurrentPrice(html: string): number {
+	const match = html.match(/difboxMinPrice[^>]*>(?:&yen;|\\?)([0-9,]+)/);
+	if (!match?.[1]) return 0;
+	return parseInt(match[1].replace(/,/g, ''), 10) || 0;
+}
+
+function extractProductName(html: string): string {
+	const match = html.match(/<h1[^>]*>(?:<a[^>]*>)?\s*([\s\S]*?)(?:<\/a>)?\s*<\/h1>/i);
+	if (!match?.[1]) return '';
+	return match[1]
+		.replace(/<[^>]+>/g, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+async function fetchKakakuPrice(productId: string): Promise<KakakuPriceData> {
+	const cached = priceCache.get(productId);
+	if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+		console.log(`[kakaku] cache hit: ${productId}`);
+		return cached.data;
+	}
+
+	const url = `https://kakaku.com/item/${encodeURIComponent(productId)}/pricehistory/`;
+	console.log(`[kakaku] fetching: ${url}`);
+
+	const res = await fetch(url, {
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
+			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+		},
+	});
+	if (!res.ok) {
+		throw new Error(`kakaku.com returned ${String(res.status)}`);
+	}
+
+	const buf = Buffer.from(await res.arrayBuffer());
+	const html = new TextDecoder('shift-jis').decode(buf);
+
+	const chartData = extractChartData(html);
+	if (chartData.length === 0) {
+		throw new Error('No chart data found in page');
+	}
+
+	const lastEntry = chartData[chartData.length - 1];
+	const currentPrice = extractCurrentPrice(html) || (lastEntry?.lowprice ?? 0);
+	const productName = extractProductName(html)
+		.replace(/の価格推移グラフ$/, '')
+		.trim() || productId;
+
+	const data: KakakuPriceData = {
+		productId,
+		productName,
+		currentPrice,
+		chartData,
+		fetchedAt: new Date().toISOString(),
+	};
+
+	priceCache.set(productId, { data, cachedAt: Date.now() });
+	console.log(`[kakaku] cached: ${productId} (entries=${String(chartData.length)})`);
+	return data;
+}
+
+const PRODUCT_ID_PATTERN = /^K\d{10}$/;
+
+app.get('/api/kakaku-price/:productId', (req: Request, res: Response) => {
+	const { productId } = req.params;
+	if (!productId || !PRODUCT_ID_PATTERN.test(productId)) {
+		res.status(400).json({ error: 'Invalid product ID format' });
+		return;
+	}
+
+	fetchKakakuPrice(productId)
+		.then(data => {
+			res.json(data);
+		})
+		.catch((err: unknown) => {
+			const message = err instanceof Error ? err.message : 'Unknown error';
+			console.error(`[kakaku] error for ${productId}:`, message);
+			res.status(502).json({ error: message });
+		});
+});
 
 // 静的ファイルを提供する
 // 優先度: <project>/frontend-dist（必ずここを使う） > <dist> > <project root>

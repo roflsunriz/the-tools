@@ -634,6 +634,60 @@ textarea {
     margin: 4px 0;
 }
 
+/* ---------- 価格推移タブ ---------- */
+
+.kakaku-chart-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    margin: 16px 0;
+}
+
+.kakaku-product-name {
+    font-size: 1.05em;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.kakaku-current-price {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.kakaku-fetched-at {
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.6;
+    text-align: right;
+    margin-top: 8px;
+}
+
+.kakaku-status {
+    min-height: 1.4em;
+}
+
+.kakaku-status--loading {
+    color: var(--secondary-color);
+}
+
+.kakaku-status--error {
+    color: #f44336;
+    font-weight: bold;
+}
+
+#kakaku-price-tab .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#kakaku-price-tab .card-header .refresh-button {
+    margin-left: auto;
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
     #alarm-form {
