@@ -1,3 +1,6 @@
+import { mdiRefresh } from '@mdi/js';
+import { setButtonIcon } from '../shared/icons.ts';
+
 type UnitEN = { suffix: 'Q' | 'T' | 'B' | 'M' | 'K'; value: number; name: '京' | '兆' | '億' | '万' | '千' };
 type UnitJP = { unit: '京' | '兆' | '億' | '万'; value: number; suffix: 'Q' | 'T' | 'B' | 'M' };
 
@@ -43,7 +46,9 @@ export class ConverterComponent {
 		this.resultDiv = document.getElementById('converter-result') as HTMLElement;
 		this.convertButton = document.getElementById('convert-button') as HTMLElement;
 		this.rateDisplay = document.getElementById('exchangeRateDisplay') as HTMLElement;
-		this.refreshButton = document.querySelector('.refresh-button') as HTMLElement;
+		this.refreshButton = document.getElementById('converter-refresh') as HTMLElement;
+
+		setButtonIcon(this.refreshButton, mdiRefresh);
 
 		this.setupEventListeners();
 		void this.fetchExchangeRate();

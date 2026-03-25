@@ -33,7 +33,7 @@
                         <div class="exchange-rate-box">
                             現在のレート: 
                             <span id="exchangeRateDisplay">取得中...</span>
-                            <button class="refresh-button">🔄</button>
+                            <button class="refresh-button icon-button" id="converter-refresh" aria-label="レート更新"></button>
                         </div>
                         <div class="toggle-switch-container">
                             <div class="toggle-label">モード選択</div>
@@ -301,13 +301,19 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>価格推移グラフ</h2>
-                        <button id="kakaku-refresh" class="refresh-button">🔄</button>
+                        <button id="kakaku-refresh" class="refresh-button icon-button" aria-label="データ更新"></button>
                     </div>
                     <div class="card-body">
-                        <div class="kakaku-ttl-row">
-                            <label for="kakaku-ttl">キャッシュ TTL:</label>
-                            <input type="range" id="kakaku-ttl" min="1" max="7" step="1" value="1">
-                            <output id="kakaku-ttl-label">1日</output>
+                        <div class="kakaku-controls-row">
+                            <div class="kakaku-item-selector">
+                                <label for="kakaku-item-select">商品:</label>
+                                <select id="kakaku-item-select" class="magic-input"></select>
+                            </div>
+                            <div class="kakaku-ttl-row">
+                                <label for="kakaku-ttl">TTL:</label>
+                                <input type="range" id="kakaku-ttl" min="1" max="7" step="1" value="1">
+                                <output id="kakaku-ttl-label">1日</output>
+                            </div>
                         </div>
                         <div id="kakaku-status" class="kakaku-status"></div>
                         <div id="kakaku-product-name" class="kakaku-product-name"></div>

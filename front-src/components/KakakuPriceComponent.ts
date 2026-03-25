@@ -1,24 +1,32 @@
 import { Chart, registerables } from 'chart.js';
+import { mdiRefresh } from '@mdi/js';
+import { setButtonIcon } from '../shared/icons.ts';
 import type { KakakuPriceData, KakakuCacheEntry } from '../types/kakaku.ts';
 
 Chart.register(...registerables);
 
-const PRIMARY_PRODUCT_ID = 'K0001521544';
-const FALLBACK_IDS: readonly string[] = [
-	'K0001573623',
-	'K0001521549',
-	'K0001582710',
-	'K0001582702',
-	'K0001659804',
+interface KakakuItem {
+	readonly id: string;
+	readonly label: string;
+}
+
+const ITEMS: readonly KakakuItem[] = [
+	{ id: 'K0001521544', label: 'K0001521544' },
+	{ id: 'K0001573623', label: 'K0001573623' },
+	{ id: 'K0001521549', label: 'K0001521549' },
+	{ id: 'K0001582710', label: 'K0001582710' },
+	{ id: 'K0001582702', label: 'K0001582702' },
+	{ id: 'K0001659804', label: 'K0001659804' },
 ];
 
 const CACHE_KEY_PREFIX = 'kakaku_price_';
 const TTL_PREF_KEY = 'kakaku_ttl_days';
+const SELECTED_ITEM_KEY = 'kakaku_selected_item';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_TTL_DAYS = 1;
 const MIN_TTL_DAYS = 1;
 const MAX_TTL_DAYS = 7;
-const PROACTIVE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1時間ごとにTTL超過チェック
+const PROACTIVE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 function clampTtl(n: number): number {
 	return Math.max(MIN_TTL_DAYS, Math.min(MAX_TTL_DAYS, Math.round(n)));
@@ -34,6 +42,18 @@ function loadTtlPref(): number {
 
 function saveTtlPref(days: number): void {
 	try { localStorage.setItem(TTL_PREF_KEY, String(days)); } catch { /* ignore */ }
+}
+
+function loadSelectedItem(): string {
+	try {
+		const raw = localStorage.getItem(SELECTED_ITEM_KEY);
+		if (raw && ITEMS.some(it => it.id === raw)) return raw;
+	} catch { /* ignore */ }
+	return ITEMS[0]?.id ?? '';
+}
+
+function saveSelectedItem(id: string): void {
+	try { localStorage.setItem(SELECTED_ITEM_KEY, id); } catch { /* ignore */ }
 }
 
 function readLocalCache(productId: string, ttlMs: number): KakakuCacheEntry | null {
@@ -55,12 +75,11 @@ function writeLocalCache(productId: string, data: KakakuPriceData): void {
 	} catch { /* quota exceeded */ }
 }
 
-function readStaleCacheTimestamp(productId: string): number | null {
+function readCacheTimestamp(productId: string): number | null {
 	try {
 		const raw = localStorage.getItem(`${CACHE_KEY_PREFIX}${productId}`);
 		if (!raw) return null;
-		const entry = JSON.parse(raw) as KakakuCacheEntry;
-		return entry.cachedAt;
+		return (JSON.parse(raw) as KakakuCacheEntry).cachedAt;
 	} catch { /* corrupt */ }
 	return null;
 }
@@ -75,9 +94,9 @@ export class KakakuPriceComponent {
 	private fetchedAtEl!: HTMLElement;
 	private ttlSlider!: HTMLInputElement;
 	private ttlLabel!: HTMLOutputElement;
+	private itemSelect!: HTMLSelectElement;
 	private ttlDays: number = DEFAULT_TTL_DAYS;
-	private checkTimer: ReturnType<typeof setInterval> | null = null;
-	private lastLoadedProductId: string | null = null;
+	private selectedProductId: string = ITEMS[0]?.id ?? '';
 
 	public init(): void {
 		this.canvas = document.getElementById('kakaku-chart') as HTMLCanvasElement;
@@ -88,10 +107,23 @@ export class KakakuPriceComponent {
 		this.fetchedAtEl = document.getElementById('kakaku-fetched-at') as HTMLElement;
 		this.ttlSlider = document.getElementById('kakaku-ttl') as HTMLInputElement;
 		this.ttlLabel = document.getElementById('kakaku-ttl-label') as HTMLOutputElement;
+		this.itemSelect = document.getElementById('kakaku-item-select') as HTMLSelectElement;
+
+		setButtonIcon(this.refreshBtn, mdiRefresh);
+
+		this.populateItemSelect();
+		this.selectedProductId = loadSelectedItem();
+		this.itemSelect.value = this.selectedProductId;
 
 		this.ttlDays = loadTtlPref();
 		this.ttlSlider.value = String(this.ttlDays);
 		this.updateTtlLabel();
+
+		this.itemSelect.addEventListener('change', () => {
+			this.selectedProductId = this.itemSelect.value;
+			saveSelectedItem(this.selectedProductId);
+			void this.loadProduct(false);
+		});
 
 		this.ttlSlider.addEventListener('input', () => {
 			this.ttlDays = clampTtl(Number(this.ttlSlider.value));
@@ -100,14 +132,23 @@ export class KakakuPriceComponent {
 		});
 
 		this.refreshBtn.addEventListener('click', () => {
-			void this.loadWithFallback(true);
+			void this.loadProduct(true);
 		});
 
-		void this.loadWithFallback(false);
+		void this.loadProduct(false);
 
-		this.checkTimer = setInterval(() => {
+		setInterval(() => {
 			void this.proactiveRefreshCheck();
 		}, PROACTIVE_CHECK_INTERVAL_MS);
+	}
+
+	private populateItemSelect(): void {
+		for (const item of ITEMS) {
+			const opt = document.createElement('option');
+			opt.value = item.id;
+			opt.textContent = item.label;
+			this.itemSelect.appendChild(opt);
+		}
 	}
 
 	private updateTtlLabel(): void {
@@ -119,39 +160,30 @@ export class KakakuPriceComponent {
 	}
 
 	private async proactiveRefreshCheck(): Promise<void> {
-		if (!this.lastLoadedProductId) return;
-
-		const cachedAt = readStaleCacheTimestamp(this.lastLoadedProductId);
+		const cachedAt = readCacheTimestamp(this.selectedProductId);
 		if (cachedAt === null || Date.now() - cachedAt >= this.ttlMs) {
 			console.log('[kakaku] TTL exceeded — proactive refresh');
-			await this.loadWithFallback(true);
+			await this.loadProduct(true);
 		}
 	}
 
-	private async loadWithFallback(forceRefresh: boolean): Promise<void> {
+	private async loadProduct(forceRefresh: boolean): Promise<void> {
 		this.setStatus('読み込み中...', 'loading');
 		this.refreshBtn.disabled = true;
 
-		const idsToTry = [PRIMARY_PRODUCT_ID, ...FALLBACK_IDS];
-
-		for (const productId of idsToTry) {
-			try {
-				const data = await this.fetchData(productId, forceRefresh);
-				if (data.chartData.length === 0) {
-					throw new Error('Empty chart data');
-				}
-				this.lastLoadedProductId = productId;
-				this.renderChart(data);
-				this.setStatus('', 'ok');
-				this.refreshBtn.disabled = false;
-				return;
-			} catch (err: unknown) {
-				const msg = err instanceof Error ? err.message : 'Unknown error';
-				console.warn(`[kakaku] ${productId} failed: ${msg}`);
+		try {
+			const data = await this.fetchData(this.selectedProductId, forceRefresh);
+			if (data.chartData.length === 0) {
+				throw new Error('価格データが空です');
 			}
+			this.renderChart(data);
+			this.setStatus('', 'ok');
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : 'Unknown error';
+			console.warn(`[kakaku] ${this.selectedProductId} failed: ${msg}`);
+			this.setStatus(`データ取得に失敗: ${msg}`, 'error');
 		}
 
-		this.setStatus('すべての商品IDでデータ取得に失敗しました', 'error');
 		this.refreshBtn.disabled = false;
 	}
 
