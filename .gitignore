@@ -4,3 +4,4 @@ server-dist/
 node_modules/
 *.log
 .playwright-mcp/
+CLAUDE.md
