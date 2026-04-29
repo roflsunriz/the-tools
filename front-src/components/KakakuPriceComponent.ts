@@ -11,14 +11,15 @@ interface KakakuItem {
 }
 
 const ITEMS: readonly KakakuItem[] = [
-	{ id: 'K0001521544', label: 'K0001521544(Memory,44800)' },
-	{ id: 'K0001573623', label: 'K0001573623(Memory,52800)' },
-	{ id: 'K0001521549', label: 'K0001521549(Memory,44800)' },
-	{ id: 'K0001582710', label: 'K0001582710(Memory,54400)' },
-	{ id: 'K0001582702', label: 'K0001582702(Memory,48000)' },
-	{ id: 'K0001659804', label: 'K0001659804(Memory,48000)' },
-	{ id: 'K0001656656', label: 'K0001656656(SSD(NVMe),8TB)' },
-	{ id: 'K0001708193', label: 'K0001708193(SSD(NVMe),8TB)' },
+	{ id: 'K0001521544', label: 'K0001521544(MainMemory, 48GB*2, 44800)' },
+	{ id: 'K0001573623', label: 'K0001573623(MainMemory, 48GB*2, 52800)' },
+	{ id: 'K0001521549', label: 'K0001521549(MainMemory, 48GB*2, 44800)' },
+	{ id: 'K0001582710', label: 'K0001582710(MainMemory, 48GB*2, 54400)' },
+	{ id: 'K0001582702', label: 'K0001582702(MainMemory, 48GB*2, 48000)' },
+	{ id: 'K0001659804', label: 'K0001659804(MainMemory, 48GB*2, 48000)' },
+	{ id: 'K0001697108', label: 'K0001697108(MainMemory, 64GB*4, 48000)' },
+	{ id: 'K0001656656', label: 'K0001656656(NVMe,8TB)' },
+	{ id: 'K0001708193', label: 'K0001708193(NVMe,8TB)' },
 ];
 
 const CACHE_KEY_PREFIX = 'kakaku_price_';

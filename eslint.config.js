@@ -10,7 +10,9 @@ module.exports = [
 		ignores: [
 			'node_modules/',
 			'server-dist/',
-			'frontend-dist/'
+			'frontend-dist/',
+			'server-src/server.js',
+			'vite.config.js'
 		]
 	},
 	js.configs.recommended,

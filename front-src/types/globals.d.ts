@@ -21,5 +21,9 @@ declare module 'clockpicker/dist/jquery-clockpicker.min.js?url' {
   const url: string;
   export default url;
 }
+declare module '*.css' {
+	const css: string;
+	export default css;
+}
 
 

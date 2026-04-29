@@ -6,6 +6,8 @@
 		"allowImportingTsExtensions": false,
 		"allowJs": false,
 		"checkJs": false,
+		"module": "CommonJS",
+		"moduleResolution": "Node",
 		"lib": ["ES2020"],
 		"types": ["node"],
 		"rootDir": "server-src"
