@@ -126,7 +126,8 @@ async function fetchKakakuPrice(productId: string, ttlDays: number): Promise<Kak
 const PRODUCT_ID_PATTERN = /^K\d{10}$/;
 
 app.get('/api/kakaku-price/:productId', (req: Request, res: Response) => {
-	const { productId } = req.params;
+	const rawProductId = req.params.productId;
+	const productId = Array.isArray(rawProductId) ? rawProductId[0] : rawProductId;
 	if (!productId || !PRODUCT_ID_PATTERN.test(productId)) {
 		res.status(400).json({ error: 'Invalid product ID format' });
 		return;

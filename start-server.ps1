@@ -20,7 +20,7 @@ Write-Log "PM2 path: $pm2Path"
 
 # --- Build ---
 Write-Log 'Running build...'
-$buildOutput = & npm run build 2>&1
+$buildOutput = & bun run build 2>&1
 $buildExitCode = $LASTEXITCODE
 $buildOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
 

@@ -2,15 +2,16 @@
   "name": "localhtml",
   "version": "1.0.0",
   "main": "index.js",
+  "packageManager": "bun@1.3.8",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-dist/server.js",
     "type-check": "tsc -p tsconfig.json",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "dev": "ts-node server.ts",
     "build:server": "tsc -p tsconfig.server.json",
     "build:frontend": "vite build",
-    "build": "npm run build:server && npm run build:frontend",
+    "build": "tsc -p tsconfig.server.json && vite build",
     "start:prod": "node server-dist/server.js"
   },
   "keywords": [],

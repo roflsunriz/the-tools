@@ -1,10 +1,10 @@
 import './style.css';
 import './setup-jquery.ts';
 
-// npm版 bootstrap をnode_modulesから読み込む
+// 依存パッケージ版 bootstrap を node_modules から読み込む
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-// npm版 clockpicker のCSSのみ先に読み込み（JSは動的importで順序保証）
+// 依存パッケージ版 clockpicker の CSS のみ先に読み込み（JS は動的 import で順序保証）
 import 'clockpicker/dist/bootstrap-clockpicker.min.css';
 // Vite のアセットとして clockpicker の UMD を参照（型定義なし）
 import clockpickerJsUrl from 'clockpicker/dist/jquery-clockpicker.min.js?url';
