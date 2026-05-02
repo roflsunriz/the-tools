@@ -2,6 +2,31 @@
 
 個人用ウェブツール集。Express + Vite + TypeScript で構築されたオールインワンのユーティリティアプリケーション。
 
+## 使い方
+
+### 初回セットアップ
+
+```powershell
+# 依存関係をインストール
+bun install
+
+# （管理者 PowerShell）ログオン時にサーバーを自動起動するタスクを登録
+Register-NanaseToolboxTask.ps1
+```
+
+### 起動／停止
+
+```powershell
+# 手動でサーバーを起動（ビルド → PM2/直接起動）
+.\start-server.ps1
+
+# サーバーを停止（PM2 プロセス削除 + node プロセス停止）
+.\stop-server.ps1
+```
+
+サーバーは `http://localhost:65505/` で起動します。  
+`Register-NanaseToolboxTask.ps1` を実行しておけば、ログオン時に自動で起動します。
+
 ## 機能一覧
 
 - **数値変換** — 通貨換算（USD ⇄ JPY）とAIパラメーター単位変換
