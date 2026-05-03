@@ -12,22 +12,69 @@ function Write-Log {
     Add-Content -LiteralPath $logPath -Value "[$timestamp] $Message" -Encoding UTF8
 }
 
+function Test-BuildUptodate {
+    $serverDist  = Join-Path -Path $PSScriptRoot -ChildPath 'server-dist\server.js'
+    $frontendDir = Join-Path -Path $PSScriptRoot -ChildPath 'frontend-dist'
+
+    if (-not (Test-Path -LiteralPath $serverDist)) { return $false }
+    $frontendFiles = @(Get-ChildItem -LiteralPath $frontendDir -Recurse -File)
+    if ($frontendFiles.Count -eq 0) { return $false }
+
+    $srcDirs = @(
+        (Join-Path -Path $PSScriptRoot -ChildPath 'front-src')
+        (Join-Path -Path $PSScriptRoot -ChildPath 'server-src')
+    )
+    $rootConfigs = @(
+        'vite.config.ts', 'tsconfig.json', 'tsconfig.server.json',
+        'package.json', 'bun.lock'
+    ) | ForEach-Object { Join-Path -Path $PSScriptRoot -ChildPath $_ }
+
+    $newestSrc = [DateTime]::MinValue
+    foreach ($d in $srcDirs) {
+        foreach ($f in (Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue)) {
+            if ($f.LastWriteTime -gt $newestSrc) { $newestSrc = $f.LastWriteTime }
+        }
+    }
+    foreach ($p in $rootConfigs) {
+        $item = Get-Item -LiteralPath $p -ErrorAction SilentlyContinue
+        if ($item -and $item.LastWriteTime -gt $newestSrc) { $newestSrc = $item.LastWriteTime }
+    }
+
+    $distDirs = @($frontendDir, (Join-Path -Path $PSScriptRoot -ChildPath 'server-dist'))
+    $oldestDist = [DateTime]::MaxValue
+    foreach ($d in $distDirs) {
+        foreach ($f in (Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue)) {
+            if ($f.LastWriteTime -lt $oldestDist) { $oldestDist = $f.LastWriteTime }
+        }
+    }
+
+    if ($newestSrc -eq [DateTime]::MinValue -or $oldestDist -eq [DateTime]::MaxValue) {
+        return $false
+    }
+    return $newestSrc -le $oldestDist
+}
+
 Write-Log '===== start-server.ps1 begin ====='
 
 # PM2 path (Task Scheduler does not inherit user PATH)
 $pm2Path = Join-Path -Path $env:APPDATA -ChildPath 'npm\pm2.cmd'
 Write-Log "PM2 path: $pm2Path"
 
-# --- Build ---
-Write-Log 'Running build...'
-$buildOutput = & bun run build 2>&1
-$buildExitCode = $LASTEXITCODE
-$buildOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
+# --- Build (skip if up-to-date) ---
+if (Test-BuildUptodate) {
+    Write-Log 'Build artifacts are up-to-date. Skipping build.'
+}
+else {
+    Write-Log 'Running build...'
+    $buildOutput = & bun run build 2>&1
+    $buildExitCode = $LASTEXITCODE
+    $buildOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
 
-if ($buildExitCode -ne 0) {
-    Write-Log '[ERROR] Build failed.'
-    Write-Error "Build failed. See log: $logPath"
-    exit 1
+    if ($buildExitCode -ne 0) {
+        Write-Log '[ERROR] Build failed.'
+        Write-Error "Build failed. See log: $logPath"
+        exit 1
+    }
 }
 
 # --- Verify build artifact ---
