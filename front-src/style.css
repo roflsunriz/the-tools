@@ -675,6 +675,36 @@ textarea {
     margin-bottom: 8px;
 }
 
+.kakaku-stats-row {
+    display: flex;
+    gap: 16px;
+    margin: 8px 0 12px;
+    flex-wrap: wrap;
+}
+
+.kakaku-stat {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary, #f5f5f5);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    padding: 6px 14px;
+    min-width: 140px;
+}
+
+.kakaku-stat-label {
+    font-size: 0.78em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+
+.kakaku-stat-value {
+    font-size: 1.15em;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
 .kakaku-fetched-at {
     font-size: 0.85em;
     color: var(--text-color);

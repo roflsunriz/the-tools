@@ -95,6 +95,9 @@ export class KakakuPriceComponent {
 	private currentPriceEl!: HTMLElement;
 	private refreshBtn!: HTMLButtonElement;
 	private fetchedAtEl!: HTMLElement;
+	private minPriceEl!: HTMLElement;
+	private avgPriceEl!: HTMLElement;
+	private modePriceEl!: HTMLElement;
 	private ttlSlider!: HTMLInputElement;
 	private ttlLabel!: HTMLOutputElement;
 	private itemSelect!: HTMLSelectElement;
@@ -108,6 +111,9 @@ export class KakakuPriceComponent {
 		this.currentPriceEl = document.getElementById('kakaku-current-price') as HTMLElement;
 		this.refreshBtn = document.getElementById('kakaku-refresh') as HTMLButtonElement;
 		this.fetchedAtEl = document.getElementById('kakaku-fetched-at') as HTMLElement;
+		this.minPriceEl = document.getElementById('kakaku-min-price') as HTMLElement;
+		this.avgPriceEl = document.getElementById('kakaku-avg-price') as HTMLElement;
+		this.modePriceEl = document.getElementById('kakaku-mode-price') as HTMLElement;
 		this.ttlSlider = document.getElementById('kakaku-ttl') as HTMLInputElement;
 		this.ttlLabel = document.getElementById('kakaku-ttl-label') as HTMLOutputElement;
 		this.itemSelect = document.getElementById('kakaku-item-select') as HTMLSelectElement;
@@ -222,6 +228,20 @@ export class KakakuPriceComponent {
 		const labels = entries.map(e => e.date);
 		const lowPrices = entries.map(e => e.lowprice);
 		const avgPrices = entries.map(e => e.aveprice);
+
+		const minPrice = Math.min(...lowPrices);
+		const avgPrice = lowPrices.reduce((s, v) => s + v, 0) / lowPrices.length;
+		const freq = new Map<number, number>();
+		for (const p of lowPrices) freq.set(p, (freq.get(p) ?? 0) + 1);
+		let modePrice = lowPrices[0];
+		let maxFreq = 0;
+		for (const [p, c] of freq) {
+			if (c > maxFreq) { modePrice = p; maxFreq = c; }
+		}
+
+		this.minPriceEl.textContent = `¥${minPrice.toLocaleString('ja-JP')}`;
+		this.avgPriceEl.textContent = `¥${Math.round(avgPrice).toLocaleString('ja-JP')}`;
+		this.modePriceEl.textContent = `¥${modePrice.toLocaleString('ja-JP')}`;
 
 		if (this.chart) {
 			this.chart.destroy();
