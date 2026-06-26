@@ -1,5 +1,8 @@
 # AGENTS.md
 
+共通ルールは `COMMON-AGENTS.md` を必ず確認し、上位方針として扱う。
+このファイルでは `the-tools` 固有の補足だけを記載する。
+
 ## Package Manager
 
 - Use `bun` for package management in this repository.
