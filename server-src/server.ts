@@ -2,6 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 const app = express();
 const PORT = 65505; // 8080と8081は使えないので65505番を使うのじゃ
@@ -142,6 +143,147 @@ app.get('/api/kakaku-price/:productId', (req: Request, res: Response) => {
 		.catch((err: unknown) => {
 			const message = err instanceof Error ? err.message : 'Unknown error';
 			console.error(`[kakaku] error for ${productId}:`, message);
+			res.status(502).json({ error: message });
+		});
+});
+
+// ---------- Codex リセットクレジットプロキシ ----------
+
+interface CodexAuthFile {
+	tokens?: {
+		access_token?: unknown;
+	};
+}
+
+interface ChatGptResetCredit {
+	status: unknown;
+	reset_type: unknown;
+	granted_at: unknown;
+	expires_at: unknown;
+	redeemed_at: unknown;
+}
+
+interface ChatGptResetCreditsResponse {
+	credits?: unknown;
+	available_count?: unknown;
+}
+
+interface CodexResetCredit {
+	status: string;
+	resetType: string;
+	grantedAt: string;
+	expiresAt: string;
+	redeemedAt: string | null;
+}
+
+interface CodexResetCreditsResponse {
+	availableCount: number;
+	credits: CodexResetCredit[];
+	fetchedAt: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null;
+}
+
+function parseCodexAuthFile(raw: string): CodexAuthFile {
+	const parsed = JSON.parse(raw) as unknown;
+	if (!isRecord(parsed)) return {};
+
+	const tokens = parsed['tokens'];
+	if (!isRecord(tokens)) return {};
+
+	return {
+		tokens: {
+			access_token: tokens['access_token'],
+		},
+	};
+}
+
+function getCodexAccessToken(): string {
+	const authPath = path.join(os.homedir(), '.codex', 'auth.json');
+	const auth = parseCodexAuthFile(fs.readFileSync(authPath, 'utf8'));
+	const token = auth.tokens?.access_token;
+
+	if (typeof token !== 'string' || token.length === 0) {
+		throw new Error('CodexのChatGPT access tokenが見つかりません。Codexへ再ログインしてください。');
+	}
+
+	return token;
+}
+
+function normalizeResetCredit(rawCredit: unknown): CodexResetCredit | null {
+	if (!isRecord(rawCredit)) return null;
+
+	const credit = rawCredit as unknown as ChatGptResetCredit;
+	if (
+		typeof credit.status !== 'string' ||
+		typeof credit.reset_type !== 'string' ||
+		typeof credit.granted_at !== 'string' ||
+		typeof credit.expires_at !== 'string'
+	) {
+		return null;
+	}
+
+	return {
+		status: credit.status,
+		resetType: credit.reset_type,
+		grantedAt: credit.granted_at,
+		expiresAt: credit.expires_at,
+		redeemedAt: typeof credit.redeemed_at === 'string' ? credit.redeemed_at : null,
+	};
+}
+
+function normalizeResetCredits(raw: unknown): CodexResetCreditsResponse {
+	if (!isRecord(raw)) {
+		throw new Error('CodexリセットAPIのレスポンス形式が不正です。');
+	}
+
+	const response = raw as ChatGptResetCreditsResponse;
+	const credits = Array.isArray(response.credits)
+		? response.credits
+			.map(normalizeResetCredit)
+			.filter((credit): credit is CodexResetCredit => credit !== null)
+		: [];
+	const availableCount = typeof response.available_count === 'number'
+		? response.available_count
+		: credits.filter(credit => credit.status === 'available').length;
+
+	return {
+		availableCount,
+		credits,
+		fetchedAt: new Date().toISOString(),
+	};
+}
+
+async function fetchCodexResetCredits(): Promise<CodexResetCreditsResponse> {
+	const token = getCodexAccessToken();
+	const response = await fetch('https://chatgpt.com/backend-api/wham/rate-limit-reset-credits', {
+		headers: {
+			'Authorization': `Bearer ${token}`,
+			'Accept': 'application/json',
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+		},
+	});
+
+	if (!response.ok) {
+		if (response.status === 401 || response.status === 403) {
+			throw new Error('CodexのChatGPTトークンで認証できません。Codexへ再ログインしてください。');
+		}
+		throw new Error(`CodexリセットAPIが ${String(response.status)} を返しました。`);
+	}
+
+	return normalizeResetCredits(await response.json() as unknown);
+}
+
+app.get('/api/codex-reset-credits', (_req: Request, res: Response) => {
+	fetchCodexResetCredits()
+		.then(data => {
+			res.json(data);
+		})
+		.catch((err: unknown) => {
+			const message = err instanceof Error ? err.message : 'Unknown error';
+			console.error('[codex-reset] error:', message);
 			res.status(502).json({ error: message });
 		});
 });

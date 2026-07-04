@@ -50,6 +50,7 @@ import { StoveComponent } from './components/StoveComponent.ts';
 import { AlarmComponent } from './components/AlarmComponent.ts';
 import { MiniJsonComponent } from './components/MiniJsonComponent.ts';
 import { KakakuPriceComponent } from './components/KakakuPriceComponent.ts';
+import { CodexResetComponent } from './components/CodexResetComponent.ts';
 
 const bootstrap = () => {
 	console.log('[boot] start');
@@ -63,6 +64,7 @@ const bootstrap = () => {
 	const alarm = new AlarmComponent();
 	const miniJson = new MiniJsonComponent();
 	const kakakuPrice = new KakakuPriceComponent();
+	const codexReset = new CodexResetComponent();
 
 	converter.init();
 	exchange.init();
@@ -73,6 +75,7 @@ const bootstrap = () => {
 	alarm.init();
 	miniJson.init();
 	kakakuPrice.init();
+	codexReset.init();
 	console.log('[boot] initialized');
 };
 

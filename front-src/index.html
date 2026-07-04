@@ -19,6 +19,7 @@
                 <button class="tab-button" data-tab="alarm">アラーム</button>
                 <button class="tab-button" data-tab="mini-json">ミニマムJSON</button>
                 <button class="tab-button" data-tab="kakaku-price">価格推移</button>
+                <button class="tab-button" data-tab="codex-reset">Codexリセット</button>
             </nav>
         </header>
 
@@ -336,6 +337,41 @@
                             <canvas id="kakaku-chart"></canvas>
                         </div>
                         <div id="kakaku-fetched-at" class="kakaku-fetched-at"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Codexリセットタブ -->
+            <div class="tab-content" id="codex-reset-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Codexリセット expire date</h2>
+                        <button id="codex-reset-refresh" class="refresh-button icon-button" aria-label="Codexリセット情報を更新"></button>
+                    </div>
+                    <div class="card-body codex-reset-body">
+                        <div class="codex-reset-status-grid">
+                            <div class="codex-reset-stat">
+                                <span class="codex-reset-label">利用可能数</span>
+                                <span id="codex-reset-available-count" class="codex-reset-value">-</span>
+                            </div>
+                            <div class="codex-reset-stat">
+                                <span class="codex-reset-label">最短expire date</span>
+                                <span id="codex-reset-next-expire" class="codex-reset-value">-</span>
+                            </div>
+                            <div class="codex-reset-stat codex-reset-stat-wide">
+                                <span class="codex-reset-label">残り時間</span>
+                                <span id="codex-reset-remaining" class="codex-reset-remaining">-</span>
+                            </div>
+                        </div>
+                        <div class="codex-reset-progress" aria-hidden="true">
+                            <div id="codex-reset-progress-bar" class="codex-reset-progress-bar"></div>
+                        </div>
+                        <div id="codex-reset-status" class="codex-reset-message" data-status="unset"></div>
+                        <div class="codex-reset-list-header">
+                            <h3>リセットクレジット</h3>
+                            <span id="codex-reset-fetched-at" class="codex-reset-fetched-at">-</span>
+                        </div>
+                        <div id="codex-reset-credits" class="codex-reset-credits"></div>
                     </div>
                 </div>
             </div>
