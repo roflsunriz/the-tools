@@ -99,9 +99,10 @@ export function parseCurrencyLocally(
 	const numericPart = unitMatch
 		? suffix.value.slice(0, -unitMatch.alias.length)
 		: suffix.value;
-	if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(numericPart)) return null;
+	const coefficient = unitMatch && numericPart.length === 0 ? '1' : numericPart;
+	if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(coefficient)) return null;
 
-	const value = Number(numericPart);
+	const value = Number(coefficient);
 	if (!Number.isFinite(value)) return null;
 	return {
 		value,

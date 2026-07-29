@@ -23,6 +23,21 @@ test('全角、空白、英語単位を正規化する', () => {
 	});
 });
 
+test('数値を省略した日本語単位を係数1としてローカル解釈する', () => {
+	for (const input of ['せんえん', '千円']) {
+		assert.deepEqual(parseCurrencyLocally(input, 'USD'), {
+			value: 1,
+			sourceUnit: '千',
+			sourceCurrency: 'JPY',
+		});
+	}
+	assert.deepEqual(parseCurrencyLocally('おくどる', 'JPY'), {
+		value: 1,
+		sourceUnit: '億',
+		sourceCurrency: 'USD',
+	});
+});
+
 test('400億ドルを円へ確定的に換算する', () => {
 	const result = formatCurrencyConversion({
 		value: 400,
@@ -47,6 +62,25 @@ test('一般表記はトークンなしでも外部通信せず変換する', as
 	});
 
 	assert.equal(result.parser, 'local');
+	assert.equal(called, false);
+});
+
+test('「せんえん」と「千円」はトークンなしで1000円として換算する', async () => {
+	let called = false;
+	const mockFetch: typeof fetch = () => {
+		called = true;
+		return Promise.reject(new Error('呼ばれてはいけません'));
+	};
+
+	for (const input of ['せんえん', '千円']) {
+		const result = await convertCurrency(input, 150, 'USD', {
+			token: '',
+			fetchImplementation: mockFetch,
+		});
+
+		assert.equal(result.parser, 'local');
+		assert.equal(result.result, '$6.67（約1,000円）');
+	}
 	assert.equal(called, false);
 });
 
