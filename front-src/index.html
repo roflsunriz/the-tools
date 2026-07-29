@@ -54,17 +54,10 @@
                             <label><input type="radio" name="currency" value="USD" checked> ドル → 円</label>
                         </div>
                         <div class="unit-selector" id="unit-selector" style="display: none;">
-                            <div class="unit-direction">
-                                <label><input type="radio" name="unit-direction" value="en-to-jp" checked> 英語 → 日本語</label>
-                                <label><input type="radio" name="unit-direction" value="jp-to-en"> 日本語 → 英語</label>
-                            </div>
-                            <select>
-                                <option value="Q">京 (Q)</option>
-                                <option value="T">兆 (T)</option>
-                                <option value="B">億 (B)</option>
-                                <option value="M">万 (M)</option>
-                                <option value="K">千 (K)</option>
-                            </select>
+                            <p class="ai-converter-description">
+                                全角・半角や空白を気にせず、変換先と表示方法を文章で指定できます。
+                                入力した変換依頼だけがSakura AIへ送信され、計算はこのアプリで行います。
+                            </p>
                         </div>
                         <div class="input-group">
                             <input type="text" id="converter-input" class="magic-input" placeholder="例: 1000円 または $15">

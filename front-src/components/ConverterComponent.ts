@@ -2,19 +2,22 @@ import { mdiRefresh } from '@mdi/js';
 import { setButtonIcon } from '../shared/icons.ts';
 
 type UnitEN = { suffix: 'Q' | 'T' | 'B' | 'M' | 'K'; value: number; name: '京' | '兆' | '億' | '万' | '千' };
-type UnitJP = { unit: '京' | '兆' | '億' | '万'; value: number; suffix: 'Q' | 'T' | 'B' | 'M' };
+interface UnitConversionResponse {
+	result?: unknown;
+	error?: unknown;
+}
 
 export class ConverterComponent {
 	private exchangeRate: number;
 	private previousRate: number | null;
-	private readonly UNITS: { EN: UnitEN[]; JP: UnitJP[] };
+	private readonly UNITS: { EN: UnitEN[] };
 
 	private input!: HTMLInputElement;
 	private currencySelector!: HTMLElement;
 	private unitSelector!: HTMLElement;
 	private modeToggle!: HTMLInputElement;
 	private resultDiv!: HTMLElement;
-	private convertButton!: HTMLElement;
+	private convertButton!: HTMLButtonElement;
 	private rateDisplay!: HTMLElement;
 	private refreshButton!: HTMLElement;
 
@@ -28,12 +31,6 @@ export class ConverterComponent {
 				{ suffix: 'B', value: 1e9, name: '億' },
 				{ suffix: 'M', value: 1e6, name: '万' },
 				{ suffix: 'K', value: 1e3, name: '千' }
-			],
-			JP: [
-				{ unit: '京', value: 1e16, suffix: 'Q' },
-				{ unit: '兆', value: 1e12, suffix: 'T' },
-				{ unit: '億', value: 1e8, suffix: 'B' },
-				{ unit: '万', value: 1e4, suffix: 'M' }
 			]
 		};
 	}
@@ -44,7 +41,7 @@ export class ConverterComponent {
 		this.unitSelector = document.getElementById('unit-selector') as HTMLElement;
 		this.modeToggle = document.getElementById('mode-toggle') as HTMLInputElement;
 		this.resultDiv = document.getElementById('converter-result') as HTMLElement;
-		this.convertButton = document.getElementById('convert-button') as HTMLElement;
+		this.convertButton = document.getElementById('convert-button') as HTMLButtonElement;
 		this.rateDisplay = document.getElementById('exchangeRateDisplay') as HTMLElement;
 		this.refreshButton = document.getElementById('converter-refresh') as HTMLElement;
 
@@ -56,9 +53,9 @@ export class ConverterComponent {
 	}
 
 	private setupEventListeners(): void {
-		this.convertButton.addEventListener('click', () => this.convertNumber());
-		this.input.addEventListener('keypress', (e: KeyboardEvent) => {
-			if (e.key === 'Enter') this.convertNumber();
+		this.convertButton.addEventListener('click', () => void this.convertNumber());
+		this.input.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key === 'Enter') void this.convertNumber();
 		});
 		this.modeToggle.addEventListener('change', () => {
 			this.updatePlaceholder();
@@ -100,26 +97,37 @@ export class ConverterComponent {
 	private updatePlaceholder(): void {
 		const examples = {
 			currency: '例: 1000円 または $15',
-			parameter: '例: 1.5Bパラメーター'
+			parameter: '例: ２．５ Ｂを億単位、小数2桁で'
 		} as const;
 		const mode = this.modeToggle.checked ? 'parameter' : 'currency';
 		this.input.placeholder = examples[mode];
 	}
 
-	public convertNumber(): void {
+	public async convertNumber(): Promise<void> {
 		const mode = this.modeToggle.checked ? 'parameter' : 'currency';
 		const input = this.input.value.trim();
 
 		try {
 			if (!input) throw new Error('入力が空っぽなのじゃ');
 
-			let result: string;
 			if (mode === 'currency') {
-				result = this.convertCurrency(input);
-				this.resultDiv.innerHTML = result;
+				this.resultDiv.innerHTML = this.convertCurrency(input);
 			} else {
-				result = this.convertParameter(input);
-				this.resultDiv.textContent = result;
+				this.setConversionLoading(true);
+				this.resultDiv.textContent = 'Sakura AIが表現を読み取っています…';
+				const response = await fetch('/api/unit-convert', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ input }),
+				});
+				const data = await response.json() as UnitConversionResponse;
+				if (!response.ok) {
+					throw new Error(typeof data.error === 'string' ? data.error : '単位変換に失敗しました。');
+				}
+				if (typeof data.result !== 'string') {
+					throw new Error('単位変換APIの応答形式が不正です。');
+				}
+				this.resultDiv.textContent = data.result;
 			}
 
 			this.resultDiv.style.color = '#2c3e50';
@@ -127,7 +135,15 @@ export class ConverterComponent {
 			const message = error instanceof Error ? error.message : String(error);
 			this.resultDiv.textContent = `⚠️ ${message}`;
 			this.resultDiv.style.color = 'red';
+		} finally {
+			this.setConversionLoading(false);
 		}
+	}
+
+	private setConversionLoading(loading: boolean): void {
+		this.convertButton.disabled = loading;
+		this.input.disabled = loading;
+		this.convertButton.textContent = loading ? '変換中…' : '変換';
 	}
 
 	private convertCurrency(input: string): string {
@@ -156,65 +172,6 @@ export class ConverterComponent {
 				<div>軽減税率(8%): ${reducedTaxFormatted}</div>
 			</div>`;
 		}
-	}
-
-	private convertParameter(input: string): string {
-		const selectedUnitEl = this.unitSelector.querySelector('select') as HTMLSelectElement | null;
-		const selectedUnit = (selectedUnitEl?.value ?? '') as UnitEN['suffix'] | '';
-		const isEnToJpEl = this.unitSelector.querySelector('input[value="en-to-jp"]') as HTMLInputElement | null;
-		const isEnToJp = Boolean(isEnToJpEl?.checked);
-		const numericValue = parseFloat(input.replace(/[^0-9.]/g, ''));
-
-		if (isEnToJp) {
-			const enToJpResult = this.enToJp(`${numericValue}${selectedUnit}`);
-			return `${enToJpResult.split(' ')[0]}パラメーター (${enToJpResult.split('(')[1]}`;
-		} else {
-			const jpToEnResult = this.jpToEn(`${numericValue}${selectedUnit}`);
-			return `${jpToEnResult.split(' ')[0]}パラメーター (${jpToEnResult.split('(')[1]}`;
-		}
-	}
-
-	private enToJp(value: string): string {
-		const selectedUnitEl = this.unitSelector.querySelector('select') as HTMLSelectElement | null;
-		const selectedUnit = (selectedUnitEl?.value ?? '') as UnitEN['suffix'] | '';
-		const unitInfo = this.UNITS.EN.find(u => u.suffix === selectedUnit);
-
-		const num = parseFloat(value.replace(/[^0-9.]/g, ''));
-		if (isNaN(num) || !unitInfo) throw new Error('数値が正しくないのじゃ');
-
-		const valueInNumber = num * unitInfo.value;
-		for (const { unit, value: unitValue } of this.UNITS.JP) {
-			if (valueInNumber >= unitValue) {
-				const converted = (valueInNumber / unitValue).toLocaleString('ja-JP', {
-					maximumFractionDigits: 3,
-					minimumFractionDigits: 1
-				});
-				const formatted = converted.replace(/(\.\d*?[1-9])0+$/, '$1');
-				return `${formatted}${unit} (${valueInNumber.toExponential()})`;
-			}
-		}
-		return `${valueInNumber.toLocaleString('ja-JP')} (${valueInNumber.toExponential()})`;
-	}
-
-	private jpToEn(value: string): string {
-		const selectedUnitEl = this.unitSelector.querySelector('select') as HTMLSelectElement | null;
-		const selectedUnit = (selectedUnitEl?.value ?? '') as UnitEN['suffix'] | '';
-		const unitInfo = this.UNITS.EN.find(u => u.suffix === selectedUnit);
-
-		const num = parseFloat(value.replace(/[^0-9.]/g, ''));
-		if (isNaN(num) || !unitInfo) throw new Error('数値が正しくないのじゃ');
-
-		const valueInNumber = num * unitInfo.value;
-		for (const { suffix, value: suffixValue } of this.UNITS.EN) {
-			if (valueInNumber >= suffixValue) {
-				const converted = (valueInNumber / suffixValue)
-					.toFixed(3)
-					.replace(/\.?0+$/, '')
-					.replace(/(\..*?)0+$/, '$1');
-				return `${converted}${suffix} (${valueInNumber.toExponential()})`;
-			}
-		}
-		return `${valueInNumber.toLocaleString('ja-JP')} (${valueInNumber.toExponential()})`;
 	}
 
 	private convertUnitToNumber(str: string): number {

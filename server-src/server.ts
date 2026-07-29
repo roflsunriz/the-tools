@@ -3,9 +3,35 @@ import type { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { convertUnitWithSakura } from './unit-converter';
 
 const app = express();
 const PORT = 65505; // 8080と8081は使えないので65505番を使うのじゃ
+
+app.use(express.json({ limit: '8kb' }));
+
+// ---------- Sakura AI 単位変換 ----------
+
+app.post('/api/unit-convert', (req: Request, res: Response) => {
+	const input = isRecord(req.body) ? req.body['input'] : undefined;
+	if (typeof input !== 'string') {
+		res.status(400).json({ error: '入力形式が不正です。' });
+		return;
+	}
+
+	convertUnitWithSakura(input)
+		.then(data => {
+			res.json(data);
+		})
+		.catch((error: unknown) => {
+			const message = error instanceof Error ? error.message : '単位変換に失敗しました。';
+			const status = message.includes('未設定') ? 503
+				: message.includes('入力') || message.includes('文字以内') ? 400
+					: 502;
+			console.error('[unit-convert] error:', message);
+			res.status(status).json({ error: message });
+		});
+});
 
 // ---------- kakaku.com 価格推移プロキシ ----------
 

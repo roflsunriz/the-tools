@@ -49,6 +49,28 @@ Register-NanaseToolboxTask.ps1
 | バックエンド | Express (Node.js), TypeScript |
 | パッケージ管理 | Bun |
 
+## Sakura AI単位変換の設定
+
+AIパラメーター単位変換では、全角・半角や空白の違いを吸収し、「億単位で」「小数2桁で」などの表示方法を文章で指定できます。Sakura AIは入力の解釈だけを行い、数値計算はサーバー側の確定的な処理で実行します。
+
+Sakura AIのコントロールパネルで発行したアカウントトークンは、次のスクリプトで登録します。入力した値は画面に表示されず、リポジトリ外のWindowsユーザー領域へDPAPIで暗号化保存されます。ソースコード、ブラウザ、Git、ログには保存されません。
+
+```powershell
+.\set-sakura-ai-token.ps1
+.\stop-server.ps1
+.\start-server.ps1
+```
+
+保存済みトークンを削除する場合は、次を実行します。
+
+```powershell
+.\set-sakura-ai-token.ps1 -Remove
+```
+
+既定モデルは、軽量なパブリックプレビューモデル `preview/Qwen3-0.6B-cpu` です。プレビュー提供が終了した場合や別の利用可能モデルを選ぶ場合は、サーバー起動前に `SAKURA_AI_MODEL` 環境変数で差し替えられます。
+
+単位変換時に入力した文章はSakura AIへ送信されます。トークン自体がブラウザやSakura AIへの入力文へ含まれることはありません。
+
 ## セットアップ
 
 ```bash

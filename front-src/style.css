@@ -736,6 +736,18 @@ textarea {
     margin-left: auto;
 }
 
+.magic-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.ai-converter-description {
+    margin: 0;
+    color: #4b5563;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
 #codex-reset-tab .card-header {
     display: flex;
     align-items: center;

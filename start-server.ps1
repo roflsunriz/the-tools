@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 
 $logPath = Join-Path -Path $PSScriptRoot -ChildPath 'start-server.log'
+$secretPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'NanaseToolbox\sakura-ai-token.xml'
 
 function Write-Log {
     param([string]$Message)
@@ -54,11 +55,48 @@ function Test-BuildUptodate {
     return $newestSrc -le $oldestDist
 }
 
+function Import-SakuraAiToken {
+    if ($env:SAKURA_AI_TOKEN) {
+        Write-Log 'Sakura AI token is available from the process environment.'
+        return
+    }
+    if (-not (Test-Path -LiteralPath $secretPath)) {
+        Write-Log 'Sakura AI token is not configured. Unit conversion API will report setup guidance.'
+        return
+    }
+
+    try {
+        $credential = Import-Clixml -LiteralPath $secretPath
+        if ($credential -isnot [System.Management.Automation.PSCredential]) {
+            throw '保存データの形式が不正です。'
+        }
+        $env:SAKURA_AI_TOKEN = $credential.GetNetworkCredential().Password
+        Write-Log 'Sakura AI token was loaded from the protected Windows user store.'
+    }
+    catch {
+        Write-Log '[ERROR] Failed to load the protected Sakura AI token.'
+        throw 'Sakura AIトークンを復号できません。同じWindowsユーザーで再登録してください。'
+    }
+}
+
 Write-Log '===== start-server.ps1 begin ====='
+Import-SakuraAiToken
 
 # PM2 path (Task Scheduler does not inherit user PATH)
 $pm2Path = Join-Path -Path $env:APPDATA -ChildPath 'npm\pm2.cmd'
 Write-Log "PM2 path: $pm2Path"
+
+# Bun path (Task Scheduler does not inherit user PATH)
+$bunPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bun\bin\bun.exe'
+if (-not (Test-Path -LiteralPath $bunPath)) {
+    $bunCommand = Get-Command bun.exe -ErrorAction SilentlyContinue
+    if (-not $bunCommand) {
+        Write-Log '[ERROR] Bun executable was not found.'
+        throw 'Bunが見つかりません。Bunをインストールしてから再実行してください。'
+    }
+    $bunPath = $bunCommand.Source
+}
+Write-Log "Bun path: $bunPath"
 
 # --- Build (skip if up-to-date) ---
 if (Test-BuildUptodate) {
@@ -66,7 +104,7 @@ if (Test-BuildUptodate) {
 }
 else {
     Write-Log 'Running build...'
-    $buildOutput = & bun run build 2>&1
+    $buildOutput = & $bunPath run build 2>&1
     $buildExitCode = $LASTEXITCODE
     $buildOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
 
@@ -96,6 +134,7 @@ if (Test-Path -LiteralPath $pm2Path) {
         ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
 
     if ($LASTEXITCODE -eq 0) {
+        Remove-Item Env:SAKURA_AI_TOKEN -ErrorAction SilentlyContinue
         Write-Log '[OK] PM2 start succeeded.'
         Write-Host '[OK] Server started under PM2 as "nanase-toolbox".'
         Write-Log '===== start-server.ps1 end ====='
@@ -108,6 +147,7 @@ if (Test-Path -LiteralPath $pm2Path) {
 # --- Fallback: direct node ---
 Write-Log 'Starting with node directly (fallback)...'
 Start-Process -FilePath 'node' -ArgumentList $serverJs -WindowStyle Minimized
+Remove-Item Env:SAKURA_AI_TOKEN -ErrorAction SilentlyContinue
 
 Write-Log '[OK] Server started via node (fallback).'
 Write-Host '[OK] Server started via node (fallback).'
