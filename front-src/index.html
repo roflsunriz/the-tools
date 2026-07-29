@@ -52,6 +52,9 @@
                         <div class="currency-selector" id="currency-selector">
                             <label><input type="radio" name="currency" value="JPY"> 円 → ドル</label>
                             <label><input type="radio" name="currency" value="USD" checked> ドル → 円</label>
+                            <p class="ai-converter-description">
+                                「400おくどる」のように入力できます。通貨名が入力に含まれる場合は、選択方向より入力内容を優先します。
+                            </p>
                         </div>
                         <div class="unit-selector" id="unit-selector" style="display: none;">
                             <p class="ai-converter-description">
@@ -60,7 +63,7 @@
                             </p>
                         </div>
                         <div class="input-group">
-                            <input type="text" id="converter-input" class="magic-input" placeholder="例: 1000円 または $15">
+                            <input type="text" id="converter-input" class="magic-input" placeholder="例: 400おくどる、$15、1000円">
                             <button id="convert-button" class="magic-button">変換</button>
                         </div>
                         <div id="converter-result" class="result-box"></div>

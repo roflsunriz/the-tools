@@ -168,6 +168,10 @@ textarea {
     min-height: 50px;
 }
 
+#converter-result {
+    white-space: pre-line;
+}
+
 /* 税情報表示のスタイル */
 .tax-info {
     margin-top: 10px;

@@ -1,7 +1,6 @@
 import { mdiRefresh } from '@mdi/js';
 import { setButtonIcon } from '../shared/icons.ts';
 
-type UnitEN = { suffix: 'Q' | 'T' | 'B' | 'M' | 'K'; value: number; name: '京' | '兆' | '億' | '万' | '千' };
 interface UnitConversionResponse {
 	result?: unknown;
 	error?: unknown;
@@ -10,7 +9,6 @@ interface UnitConversionResponse {
 export class ConverterComponent {
 	private exchangeRate: number;
 	private previousRate: number | null;
-	private readonly UNITS: { EN: UnitEN[] };
 
 	private input!: HTMLInputElement;
 	private currencySelector!: HTMLElement;
@@ -24,15 +22,6 @@ export class ConverterComponent {
 	constructor() {
 		this.exchangeRate = 152;
 		this.previousRate = null;
-		this.UNITS = {
-			EN: [
-				{ suffix: 'Q', value: 1e15, name: '京' },
-				{ suffix: 'T', value: 1e12, name: '兆' },
-				{ suffix: 'B', value: 1e9, name: '億' },
-				{ suffix: 'M', value: 1e6, name: '万' },
-				{ suffix: 'K', value: 1e3, name: '千' }
-			]
-		};
 	}
 
 	public init(): void {
@@ -96,7 +85,7 @@ export class ConverterComponent {
 
 	private updatePlaceholder(): void {
 		const examples = {
-			currency: '例: 1000円 または $15',
+			currency: '例: 400おくどる、$15、1000円',
 			parameter: '例: ２．５ Ｂを億単位、小数2桁で'
 		} as const;
 		const mode = this.modeToggle.checked ? 'parameter' : 'currency';
@@ -110,24 +99,18 @@ export class ConverterComponent {
 		try {
 			if (!input) throw new Error('入力が空っぽなのじゃ');
 
+			this.setConversionLoading(true);
+			this.resultDiv.textContent = '入力内容を読み取っています…';
 			if (mode === 'currency') {
-				this.resultDiv.innerHTML = this.convertCurrency(input);
-			} else {
-				this.setConversionLoading(true);
-				this.resultDiv.textContent = 'Sakura AIが表現を読み取っています…';
-				const response = await fetch('/api/unit-convert', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ input }),
+				const jpyRadio = this.currencySelector.querySelector('input[value="JPY"]') as HTMLInputElement | null;
+				await this.requestConversion('/api/currency-convert', {
+					input,
+					exchangeRate: this.exchangeRate,
+					defaultSourceCurrency: jpyRadio?.checked ? 'JPY' : 'USD',
 				});
-				const data = await response.json() as UnitConversionResponse;
-				if (!response.ok) {
-					throw new Error(typeof data.error === 'string' ? data.error : '単位変換に失敗しました。');
-				}
-				if (typeof data.result !== 'string') {
-					throw new Error('単位変換APIの応答形式が不正です。');
-				}
-				this.resultDiv.textContent = data.result;
+			} else {
+				this.resultDiv.textContent = 'Sakura AIが表現を読み取っています…';
+				await this.requestConversion('/api/unit-convert', { input });
 			}
 
 			this.resultDiv.style.color = '#2c3e50';
@@ -146,79 +129,20 @@ export class ConverterComponent {
 		this.convertButton.textContent = loading ? '変換中…' : '変換';
 	}
 
-	private convertCurrency(input: string): string {
-		const jpyRadio = this.currencySelector.querySelector('input[value="JPY"]') as HTMLInputElement | null;
-		const isYenToDollar = Boolean(jpyRadio?.checked);
-		const numericValue = this.convertUnitToNumber(input.replace(/[$円¥,\s]/g, ''));
-
-		if (isYenToDollar) {
-			const usdValue = numericValue / this.exchangeRate;
-			const usdFormatted = this.formatCurrencyWithUnits(usdValue, 'USD');
-			const jpyFormatted = this.formatCurrencyWithUnits(numericValue, 'JPY');
-			return `${usdFormatted} (約${jpyFormatted})`;
-		} else {
-			const jpyValue = numericValue * this.exchangeRate;
-			const withTax = Math.floor(jpyValue * 1.1);
-			const withReducedTax = Math.floor(jpyValue * 1.08);
-
-			const jpyFormatted = this.formatCurrencyWithUnits(jpyValue, 'JPY');
-			const usdFormatted = this.formatCurrencyWithUnits(numericValue, 'USD');
-			const taxFormatted = this.formatCurrencyWithUnits(withTax, 'JPY');
-			const reducedTaxFormatted = this.formatCurrencyWithUnits(withReducedTax, 'JPY');
-
-			return `${jpyFormatted} (${usdFormatted})
-			<div class="tax-info">
-				<div>消費税込(10%): ${taxFormatted}</div>
-				<div>軽減税率(8%): ${reducedTaxFormatted}</div>
-			</div>`;
+	private async requestConversion(endpoint: string, body: Record<string, unknown>): Promise<void> {
+		const response = await fetch(endpoint, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		});
+		const data = await response.json() as UnitConversionResponse;
+		if (!response.ok) {
+			throw new Error(typeof data.error === 'string' ? data.error : '数値変換に失敗しました。');
 		}
-	}
-
-	private convertUnitToNumber(str: string): number {
-		let s = str.toUpperCase().replace(/,/g, '');
-		const unitMap = Object.fromEntries(this.UNITS.EN.map(u => [u.suffix, u.value])) as Record<UnitEN['suffix'], number>;
-		const match = s.match(/^([\d.]+)([QTBMK]?)$/);
-		if (!match) throw new Error('数値変換できませんのじゃ');
-		const value = parseFloat(match[1]);
-		const unit = (match[2] || ' ') as UnitEN['suffix'] | ' ';
-		return value * ((unit === ' ' ? 1 : unitMap[unit]));
-	}
-
-	private formatCurrencyWithUnits(value: number, currency: 'JPY' | 'USD'): string {
-		const absValue = Math.abs(value);
-		const isNegative = value < 0;
-		const prefix = isNegative ? '-' : '';
-
-		if (currency === 'JPY') {
-			const jpyUnits = [
-				{ unit: '京', value: 1e16 },
-				{ unit: '兆', value: 1e12 },
-				{ unit: '億', value: 1e8 },
-				{ unit: '万', value: 1e4 }
-			];
-			for (const { unit, value: unitValue } of jpyUnits) {
-				if (absValue >= unitValue) {
-					const converted = (absValue / unitValue).toFixed(1).replace(/\.0$/, '');
-					return `${prefix}${Math.floor(absValue).toLocaleString('ja-JP')}円 (${prefix}${converted}${unit}円)`;
-				}
-			}
-			return `${prefix}${Math.floor(absValue).toLocaleString('ja-JP')}円`;
-		} else {
-			const usdUnits: Array<{ suffix: UnitEN['suffix']; value: number; name: UnitEN['name'] }> = [
-				{ suffix: 'Q', value: 1e15, name: '京' },
-				{ suffix: 'T', value: 1e12, name: '兆' },
-				{ suffix: 'B', value: 1e9, name: '億' },
-				{ suffix: 'M', value: 1e6, name: '万' },
-				{ suffix: 'K', value: 1e3, name: '千' }
-			];
-			for (const { value: unitValue, name, suffix } of usdUnits) {
-				if (absValue >= unitValue) {
-					const converted = (absValue / unitValue).toFixed(1).replace(/\.0$/, '');
-					return `${prefix}$${absValue.toFixed(2)} (${prefix}$${converted}${suffix}・${name}ドル)`;
-				}
-			}
-			return `${prefix}$${absValue.toFixed(2)}`;
+		if (typeof data.result !== 'string') {
+			throw new Error('数値変換APIの応答形式が不正です。');
 		}
+		this.resultDiv.textContent = data.result;
 	}
 }
 

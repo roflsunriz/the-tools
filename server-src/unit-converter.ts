@@ -34,7 +34,7 @@ const TARGET_UNITS = [
 	'京',
 ] as const;
 
-type SourceUnit = keyof typeof UNIT_MULTIPLIERS;
+export type SourceUnit = keyof typeof UNIT_MULTIPLIERS;
 type TargetUnit = typeof TARGET_UNITS[number];
 
 export interface UnitInterpretation {
@@ -60,8 +60,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null;
 }
 
-function isSourceUnit(value: unknown): value is SourceUnit {
+export function isSourceUnit(value: unknown): value is SourceUnit {
 	return typeof value === 'string' && Object.prototype.hasOwnProperty.call(UNIT_MULTIPLIERS, value);
+}
+
+export function getUnitMultiplier(unit: SourceUnit): number {
+	return UNIT_MULTIPLIERS[unit];
 }
 
 function isTargetUnit(value: unknown): value is TargetUnit {

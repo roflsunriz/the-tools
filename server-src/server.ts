@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { convertUnitWithSakura } from './unit-converter';
+import { convertCurrency } from './currency-converter';
 
 const app = express();
 const PORT = 65505; // 8080と8081は使えないので65505番を使うのじゃ
@@ -11,6 +12,34 @@ const PORT = 65505; // 8080と8081は使えないので65505番を使うのじ�
 app.use(express.json({ limit: '8kb' }));
 
 // ---------- Sakura AI 単位変換 ----------
+
+app.post('/api/currency-convert', (req: Request, res: Response) => {
+	const body = isRecord(req.body) ? req.body : {};
+	const input = body['input'];
+	const exchangeRate = body['exchangeRate'];
+	const defaultSourceCurrency = body['defaultSourceCurrency'];
+	if (
+		typeof input !== 'string' ||
+		typeof exchangeRate !== 'number' ||
+		(defaultSourceCurrency !== 'USD' && defaultSourceCurrency !== 'JPY')
+	) {
+		res.status(400).json({ error: '入力形式が不正です。' });
+		return;
+	}
+
+	convertCurrency(input, exchangeRate, defaultSourceCurrency)
+		.then(data => {
+			res.json(data);
+		})
+		.catch((error: unknown) => {
+			const message = error instanceof Error ? error.message : '通貨変換に失敗しました。';
+			const status = message.includes('未設定') ? 503
+				: message.includes('入力') || message.includes('為替レート') ? 400
+					: 502;
+			console.error('[currency-convert] error:', message);
+			res.status(status).json({ error: message });
+		});
+});
 
 app.post('/api/unit-convert', (req: Request, res: Response) => {
 	const input = isRecord(req.body) ? req.body['input'] : undefined;

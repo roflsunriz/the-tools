@@ -12,7 +12,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:frontend": "vite build",
     "build": "tsc -p tsconfig.server.json && vite build",
-    "test": "bun test server-src/unit-converter.test.ts",
+    "test": "bun test server-src",
     "start:prod": "node server-dist/server.js"
   },
   "keywords": [],
