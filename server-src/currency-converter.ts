@@ -1,5 +1,6 @@
 import type { UnitInterpretation } from './unit-converter';
-import { getUnitMultiplier, isSourceUnit } from './unit-converter';
+import { getUnitMultiplier } from './unit-converter';
+import { parseJapaneseNumber } from './japanese-number';
 
 const SAKURA_AI_ENDPOINT = 'https://api.ai.sakura.ad.jp/v1/chat/completions';
 const DEFAULT_SAKURA_AI_MODEL = 'preview/Qwen3-0.6B-cpu';
@@ -17,13 +18,28 @@ export interface CurrencyConversionResult {
 	result: string;
 	interpretation: CurrencyInterpretation;
 	parser: 'local' | 'sakura-ai';
+	verification: CurrencyVerification;
 	model?: string;
+}
+
+export interface CurrencyVerification {
+	normalizedInput: string;
+	sourceAmount: number;
+	convertedAmount: number;
+	verified: true;
 }
 
 interface CurrencyConversionOptions {
 	token?: string;
 	model?: string;
 	fetchImplementation?: typeof fetch;
+}
+
+interface SakuraCurrencyInterpretation {
+	normalizedInput: string;
+	sourceAmount: number;
+	sourceCurrency: Currency;
+	convertedAmount: number;
 }
 
 const CURRENCY_ALIASES: ReadonlyArray<{ alias: string; currency: Currency }> = [
@@ -35,6 +51,7 @@ const CURRENCY_ALIASES: ReadonlyArray<{ alias: string; currency: Currency }> = [
 	{ alias: '$', currency: 'USD' },
 	{ alias: 'yen', currency: 'JPY' },
 	{ alias: 'えん', currency: 'JPY' },
+	{ alias: 'エン', currency: 'JPY' },
 	{ alias: '円', currency: 'JPY' },
 	{ alias: 'jpy', currency: 'JPY' },
 	{ alias: '¥', currency: 'JPY' },
@@ -100,18 +117,26 @@ export function parseCurrencyLocally(
 		? suffix.value.slice(0, -unitMatch.alias.length)
 		: suffix.value;
 	const coefficient = unitMatch && numericPart.length === 0 ? '1' : numericPart;
-	if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(coefficient)) return null;
+	if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(coefficient)) {
+		const value = Number(coefficient);
+		if (!Number.isFinite(value)) return null;
+		return {
+			value,
+			sourceUnit: unitMatch?.unit ?? 'none',
+			sourceCurrency: prefix.currency ?? suffix.currency ?? defaultSourceCurrency,
+		};
+	}
 
-	const value = Number(coefficient);
-	if (!Number.isFinite(value)) return null;
+	const japaneseValue = parseJapaneseNumber(suffix.value);
+	if (japaneseValue === null) return null;
 	return {
-		value,
-		sourceUnit: unitMatch?.unit ?? 'none',
+		value: japaneseValue,
+		sourceUnit: 'none',
 		sourceCurrency: prefix.currency ?? suffix.currency ?? defaultSourceCurrency,
 	};
 }
 
-export function parseCurrencyInterpretation(content: string): CurrencyInterpretation {
+export function parseCurrencyInterpretation(content: string): SakuraCurrencyInterpretation {
 	const firstBrace = content.indexOf('{');
 	const lastBrace = content.lastIndexOf('}');
 	if (firstBrace < 0 || lastBrace <= firstBrace) {
@@ -128,18 +153,23 @@ export function parseCurrencyInterpretation(content: string): CurrencyInterpreta
 		throw new Error('Sakura AIの応答形式が不正でした。もう一度お試しください。');
 	}
 
-	const value = parsed['value'];
-	const sourceUnit = parsed['sourceUnit'];
+	const normalizedInput = parsed['normalizedInput'];
+	const sourceAmount = parsed['sourceAmount'];
 	const sourceCurrency = parsed['sourceCurrency'];
+	const convertedAmount = parsed['convertedAmount'];
 	if (
-		typeof value !== 'number' ||
-		!Number.isFinite(value) ||
-		!isSourceUnit(sourceUnit) ||
-		!isCurrency(sourceCurrency)
+		typeof normalizedInput !== 'string' ||
+		normalizedInput.length === 0 ||
+		normalizedInput.length > 200 ||
+		typeof sourceAmount !== 'number' ||
+		!Number.isFinite(sourceAmount) ||
+		!isCurrency(sourceCurrency) ||
+		typeof convertedAmount !== 'number' ||
+		!Number.isFinite(convertedAmount)
 	) {
 		throw new Error('Sakura AIが返した通貨条件を安全に検証できませんでした。');
 	}
-	return { value, sourceUnit, sourceCurrency };
+	return { normalizedInput, sourceAmount, sourceCurrency, convertedAmount };
 }
 
 function extractAssistantContent(raw: unknown): string {
@@ -156,8 +186,9 @@ function extractAssistantContent(raw: unknown): string {
 async function interpretCurrencyWithSakura(
 	input: string,
 	defaultSourceCurrency: Currency,
+	exchangeRate: number,
 	options: CurrencyConversionOptions,
-): Promise<{ interpretation: CurrencyInterpretation; model: string }> {
+): Promise<{ interpretation: SakuraCurrencyInterpretation; model: string }> {
 	const token = options.token ?? process.env['SAKURA_AI_TOKEN'];
 	if (!token) {
 		throw new Error('この表現にはSakura AIが必要ですが、トークンが未設定です。READMEの手順で安全に登録してください。');
@@ -183,9 +214,12 @@ async function interpretCurrencyWithSakura(
 					content: [
 						'次の通貨額を解析し、JSONオブジェクトだけを返してください。',
 						'ひらがな、カタカナ、全角、半角、空白、日本語の数値単位を解釈してください。',
-						'計算や説明は行わないでください。',
+						'valueと単位を分離せず、sourceAmountには単位を展開した絶対額を入れてください。',
+						'convertedAmountには指定レートで反対通貨へ換算した数値を入れてください。',
+						'説明は行わないでください。',
 						'スキーマ:',
-						'{"value":number,"sourceUnit":"none|K|M|B|T|Q|千|万|億|兆|京","sourceCurrency":"USD|JPY"}',
+						'{"normalizedInput":string,"sourceAmount":number,"sourceCurrency":"USD|JPY","convertedAmount":number}',
+						`換算レート: 1 USD = ${String(exchangeRate)} JPY`,
 						`通貨が省略されている場合の既定値: ${defaultSourceCurrency}`,
 						`依頼: ${input}`,
 					].join('\n'),
@@ -211,6 +245,88 @@ async function interpretCurrencyWithSakura(
 	return {
 		interpretation: parseCurrencyInterpretation(extractAssistantContent(await response.json() as unknown)),
 		model,
+	};
+}
+
+function calculateConvertedAmount(
+	sourceAmount: number,
+	sourceCurrency: Currency,
+	exchangeRate: number,
+): number {
+	return sourceCurrency === 'JPY'
+		? sourceAmount / exchangeRate
+		: sourceAmount * exchangeRate;
+}
+
+function assertValidExchangeRate(exchangeRate: number): void {
+	if (!Number.isFinite(exchangeRate) || exchangeRate <= 0 || exchangeRate > 1_000) {
+		throw new Error('為替レートが不正です。レートを更新してから再度お試しください。');
+	}
+}
+
+function isApproximatelyEqual(left: number, right: number): boolean {
+	const tolerance = Math.max(0.01, Math.abs(right) * 1e-9);
+	return Math.abs(left - right) <= tolerance;
+}
+
+function verifySakuraInterpretation(
+	ai: SakuraCurrencyInterpretation,
+	exchangeRate: number,
+	local: CurrencyInterpretation | null,
+): { interpretation: CurrencyInterpretation; verification: CurrencyVerification } {
+	const independentlyConverted = calculateConvertedAmount(
+		ai.sourceAmount,
+		ai.sourceCurrency,
+		exchangeRate,
+	);
+	if (!isApproximatelyEqual(ai.convertedAmount, independentlyConverted)) {
+		throw new Error('Sakura AIの計算結果が独立検算と一致しませんでした。入力を確認してください。');
+	}
+
+	if (local) {
+		const localAmount = local.value * getUnitMultiplier(local.sourceUnit);
+		if (
+			local.sourceCurrency !== ai.sourceCurrency ||
+			!isApproximatelyEqual(localAmount, ai.sourceAmount)
+		) {
+			throw new Error('Sakura AIの正規化結果がローカル解析と一致しませんでした。入力を確認してください。');
+		}
+	}
+
+	return {
+		interpretation: {
+			value: ai.sourceAmount,
+			sourceUnit: 'none',
+			sourceCurrency: ai.sourceCurrency,
+		},
+		verification: {
+			normalizedInput: ai.normalizedInput,
+			sourceAmount: ai.sourceAmount,
+			convertedAmount: independentlyConverted,
+			verified: true,
+		},
+	};
+}
+
+function createLocalResult(
+	local: CurrencyInterpretation,
+	exchangeRate: number,
+): CurrencyConversionResult {
+	const sourceAmount = local.value * getUnitMultiplier(local.sourceUnit);
+	return {
+		result: formatCurrencyConversion(local, exchangeRate),
+		interpretation: local,
+		parser: 'local',
+		verification: {
+			normalizedInput: `${String(sourceAmount)} ${local.sourceCurrency}`,
+			sourceAmount,
+			convertedAmount: calculateConvertedAmount(
+				sourceAmount,
+				local.sourceCurrency,
+				exchangeRate,
+			),
+			verified: true,
+		},
 	};
 }
 
@@ -256,9 +372,7 @@ export function formatCurrencyConversion(
 	interpretation: CurrencyInterpretation,
 	exchangeRate: number,
 ): string {
-	if (!Number.isFinite(exchangeRate) || exchangeRate <= 0 || exchangeRate > 1_000) {
-		throw new Error('為替レートが不正です。レートを更新してから再度お試しください。');
-	}
+	assertValidExchangeRate(exchangeRate);
 	const sourceAmount = interpretation.value * getUnitMultiplier(interpretation.sourceUnit);
 	if (!Number.isFinite(sourceAmount)) {
 		throw new Error('変換する金額が大きすぎます。');
@@ -288,21 +402,30 @@ export async function convertCurrency(
 	if (trimmedInput.length > MAX_INPUT_LENGTH) {
 		throw new Error(`入力は${String(MAX_INPUT_LENGTH)}文字以内にしてください。`);
 	}
+	assertValidExchangeRate(exchangeRate);
 
 	const local = parseCurrencyLocally(trimmedInput, defaultSourceCurrency);
-	if (local) {
-		return {
-			result: formatCurrencyConversion(local, exchangeRate),
-			interpretation: local,
-			parser: 'local',
-		};
+	const token = options.token ?? process.env['SAKURA_AI_TOKEN'];
+	if (!token) {
+		if (local) return createLocalResult(local, exchangeRate);
+		throw new Error('この表現にはSakura AIが必要ですが、トークンが未設定です。READMEの手順で安全に登録してください。');
 	}
 
-	const ai = await interpretCurrencyWithSakura(trimmedInput, defaultSourceCurrency, options);
+	let ai: Awaited<ReturnType<typeof interpretCurrencyWithSakura>>;
+	let verified: ReturnType<typeof verifySakuraInterpretation>;
+	try {
+		ai = await interpretCurrencyWithSakura(trimmedInput, defaultSourceCurrency, exchangeRate, options);
+		verified = verifySakuraInterpretation(ai.interpretation, exchangeRate, local);
+	} catch (error: unknown) {
+		if (local) return createLocalResult(local, exchangeRate);
+		throw error;
+	}
+
 	return {
-		result: formatCurrencyConversion(ai.interpretation, exchangeRate),
-		interpretation: ai.interpretation,
+		result: formatCurrencyConversion(verified.interpretation, exchangeRate),
+		interpretation: verified.interpretation,
 		parser: 'sakura-ai',
+		verification: verified.verification,
 		model: ai.model,
 	};
 }
