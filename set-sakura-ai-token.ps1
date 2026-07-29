@@ -1,6 +1,7 @@
 #Requires -Version 5.1
 param(
-    [switch]$Remove
+    [switch]$Remove,
+    [switch]$Prompt
 )
 
 Set-StrictMode -Version Latest
@@ -20,7 +21,27 @@ if ($Remove) {
     exit 0
 }
 
-$secureToken = Read-Host 'Sakura AIのアカウントトークンを入力してください（画面には表示されません）' -AsSecureString
+$secureToken = if ($Prompt) {
+    Read-Host 'Sakura AIのアカウントトークンを入力してください（画面には表示されません）' -AsSecureString
+}
+else {
+    $clipboardContent = Get-Clipboard -Raw
+    $clipboardToken = if ($null -eq $clipboardContent) { '' } else { $clipboardContent.Trim() }
+    $tokenPattern = '^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}:\S+$'
+    if ($clipboardToken -notmatch $tokenPattern) {
+        Write-Error 'クリップボードにSakura AIのアカウントトークンがありません。トークンをコピーしてから再実行してください。'
+        exit 1
+    }
+
+    try {
+        ConvertTo-SecureString $clipboardToken -AsPlainText -Force
+    }
+    finally {
+        Set-Clipboard -Value $null
+        $clipboardToken = $null
+    }
+}
+
 if ($secureToken.Length -eq 0) {
     Write-Error 'トークンが空です。保存せず終了します。'
     exit 1
@@ -31,4 +52,7 @@ $credential = [System.Management.Automation.PSCredential]::new('SakuraAI', $secu
 $credential | Export-Clixml -LiteralPath $secretPath -Force
 
 Write-Host 'Sakura AIトークンをWindowsユーザーに紐づけて暗号化保存しました。'
+if (-not $Prompt) {
+    Write-Host '安全のため、トークンを読み取った後のクリップボードを消去しました。'
+}
 Write-Host '反映するには .\stop-server.ps1 の後に .\start-server.ps1 を実行してください。'

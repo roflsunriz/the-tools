@@ -18,7 +18,7 @@ bun run build
 .\start-server.ps1
 ```
 
-Sakura AI単位変換を使う場合は、初回のみ次のコマンドでアカウントトークンを暗号化保存します。
+Sakura AI単位変換を使う場合は、初回のみSakura AIのアカウントトークンをコピーしてから次のコマンドを実行します。スクリプトは読取後にクリップボードを消去し、トークンを暗号化保存します。
 
 ```powershell
 .\set-sakura-ai-token.ps1
