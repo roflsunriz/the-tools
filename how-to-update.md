@@ -26,7 +26,11 @@ Sakura AI単位変換を使う場合は、初回のみSakura AIのアカウン�
 
 ## 検証
 
-ブラウザで `http://localhost:65505/` を開き、通貨変換とAIパラメーター単位変換の両方を確認します。AIパラメーターでは、たとえば「２．５ Ｂを億単位、小数2桁で」を入力し、「25億」と表示されることを確認します。
+`stop-server.ps1` の後に `start-server.ps1` を2回実行し、1回目に `PM2 action: start`、2回目に `PM2 action: restart` と表示され、どちらも `status=online` と `HTTP state: ... status=200` になることを確認します。続けて `stop-server.ps1` を実行し、PM2 と直接起動した node プロセスがともに `absent` と表示されることを確認します。停止後は `start-server.ps1` を再実行して通常の起動状態へ戻します。
+
+`start-server.log` と `stop-server.log` には、PM2 の表形式出力や `Process or Namespace nanase-toolbox not found` がなく、操作、状態、失敗理由が UTF-8 のテキストで記録されます。
+
+最後にブラウザで `http://localhost:65505/` を開き、通貨変換とAIパラメーター単位変換の両方を確認します。AIパラメーターでは、たとえば「２．５ Ｂを億単位、小数2桁で」を入力し、「25億」と表示されることを確認します。
 
 ## ロールバック
 

@@ -19,15 +19,17 @@ Register-NanaseToolboxTask.ps1
 ### 起動／停止
 
 ```powershell
-# 手動でサーバーを起動（ビルド → PM2/直接起動）
+# 手動でサーバーを起動（起動済みの場合は PM2 で再起動）
 .\start-server.ps1
 
-# サーバーを停止（PM2 プロセス削除 + node プロセス停止）
+# サーバーを停止（PM2 登録と直接起動した node プロセスを確認して停止）
 .\stop-server.ps1
 ```
 
 サーバーは `http://localhost:65505/` で起動します。  
 `Register-NanaseToolboxTask.ps1` を実行しておけば、ログオン時に自動で起動します。
+
+`start-server.ps1` は PM2 への登録有無を先に調べ、未登録なら起動、登録済みなら再起動します。処理後には PM2 の状態、PID、再起動回数と HTTP 応答を表示します。`stop-server.ps1` も停止後に PM2 と直接起動プロセスが存在しないことを確認します。詳細は `start-server.log` と `stop-server.log` に UTF-8 で記録され、文字化けしやすい PM2 の表形式出力は保存しません。
 
 ## 機能一覧
 

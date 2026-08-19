@@ -1,23 +1,52 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 Set-Location -LiteralPath $PSScriptRoot
 
+$appName = 'nanase-toolbox'
+$serverUri = [uri]'http://127.0.0.1:65505/'
 $logPath = Join-Path -Path $PSScriptRoot -ChildPath 'start-server.log'
 $secretPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'NanaseToolbox\sakura-ai-token.xml'
+$helperPath = Join-Path -Path $PSScriptRoot -ChildPath 'server-process-helpers.ps1'
 
-function Write-Log {
+. $helperPath
+
+$utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = $utf8WithoutBom
+$OutputEncoding = $utf8WithoutBom
+$env:NO_COLOR = '1'
+
+Initialize-Utf8Log -Path $logPath
+
+function Write-LifecycleLog {
     param([string]$Message)
+
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    Add-Content -LiteralPath $logPath -Value "[$timestamp] $Message" -Encoding UTF8
+    Add-Utf8LogLine -Path $logPath -Message "[$timestamp] $Message"
+}
+
+function Write-Status {
+    param([string]$Message)
+
+    Write-LifecycleLog $Message
+    Write-Information -MessageData $Message -InformationAction Continue
+}
+
+function Write-OutputLinesToLog {
+    param([object[]]$Lines)
+
+    ConvertTo-CleanCommandOutput -Lines $Lines |
+        ForEach-Object { Add-Utf8LogLine -Path $logPath -Message $_ }
 }
 
 function Test-BuildUptodate {
-    $serverDist  = Join-Path -Path $PSScriptRoot -ChildPath 'server-dist\server.js'
+    $serverDist = Join-Path -Path $PSScriptRoot -ChildPath 'server-dist\server.js'
     $frontendDir = Join-Path -Path $PSScriptRoot -ChildPath 'frontend-dist'
 
     if (-not (Test-Path -LiteralPath $serverDist)) { return $false }
+    if (-not (Test-Path -LiteralPath $frontendDir)) { return $false }
+
     $frontendFiles = @(Get-ChildItem -LiteralPath $frontendDir -Recurse -File)
     if ($frontendFiles.Count -eq 0) { return $false }
 
@@ -31,21 +60,21 @@ function Test-BuildUptodate {
     ) | ForEach-Object { Join-Path -Path $PSScriptRoot -ChildPath $_ }
 
     $newestSrc = [DateTime]::MinValue
-    foreach ($d in $srcDirs) {
-        foreach ($f in (Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue)) {
-            if ($f.LastWriteTime -gt $newestSrc) { $newestSrc = $f.LastWriteTime }
+    foreach ($directory in $srcDirs) {
+        foreach ($file in (Get-ChildItem -LiteralPath $directory -Recurse -File -ErrorAction SilentlyContinue)) {
+            if ($file.LastWriteTime -gt $newestSrc) { $newestSrc = $file.LastWriteTime }
         }
     }
-    foreach ($p in $rootConfigs) {
-        $item = Get-Item -LiteralPath $p -ErrorAction SilentlyContinue
+    foreach ($path in $rootConfigs) {
+        $item = Get-Item -LiteralPath $path -ErrorAction SilentlyContinue
         if ($item -and $item.LastWriteTime -gt $newestSrc) { $newestSrc = $item.LastWriteTime }
     }
 
     $distDirs = @($frontendDir, (Join-Path -Path $PSScriptRoot -ChildPath 'server-dist'))
     $oldestDist = [DateTime]::MaxValue
-    foreach ($d in $distDirs) {
-        foreach ($f in (Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue)) {
-            if ($f.LastWriteTime -lt $oldestDist) { $oldestDist = $f.LastWriteTime }
+    foreach ($directory in $distDirs) {
+        foreach ($file in (Get-ChildItem -LiteralPath $directory -Recurse -File -ErrorAction SilentlyContinue)) {
+            if ($file.LastWriteTime -lt $oldestDist) { $oldestDist = $file.LastWriteTime }
         }
     }
 
@@ -57,11 +86,11 @@ function Test-BuildUptodate {
 
 function Import-SakuraAiToken {
     if ($env:SAKURA_AI_TOKEN) {
-        Write-Log 'Sakura AI token is available from the process environment.'
+        Write-LifecycleLog 'Sakura AI token is available from the process environment.'
         return
     }
     if (-not (Test-Path -LiteralPath $secretPath)) {
-        Write-Log 'Sakura AI token is not configured. Unit conversion API will report setup guidance.'
+        Write-LifecycleLog 'Sakura AI token is not configured. Unit conversion API will report setup guidance.'
         return
     }
 
@@ -71,84 +100,154 @@ function Import-SakuraAiToken {
             throw '保存データの形式が不正です。'
         }
         $env:SAKURA_AI_TOKEN = $credential.GetNetworkCredential().Password
-        Write-Log 'Sakura AI token was loaded from the protected Windows user store.'
+        Write-LifecycleLog 'Sakura AI token was loaded from the protected Windows user store.'
     }
     catch {
-        Write-Log '[ERROR] Failed to load the protected Sakura AI token.'
+        Write-LifecycleLog '[ERROR] Failed to load the protected Sakura AI token.'
         throw 'Sakura AIトークンを復号できません。同じWindowsユーザーで再登録してください。'
     }
 }
 
-Write-Log '===== start-server.ps1 begin ====='
-Import-SakuraAiToken
-
-# PM2 path (Task Scheduler does not inherit user PATH)
-$pm2Path = Join-Path -Path $env:APPDATA -ChildPath 'npm\pm2.cmd'
-Write-Log "PM2 path: $pm2Path"
-
-# Bun path (Task Scheduler does not inherit user PATH)
-$bunPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bun\bin\bun.exe'
-if (-not (Test-Path -LiteralPath $bunPath)) {
-    $bunCommand = Get-Command bun.exe -ErrorAction SilentlyContinue
-    if (-not $bunCommand) {
-        Write-Log '[ERROR] Bun executable was not found.'
-        throw 'Bunが見つかりません。Bunをインストールしてから再実行してください。'
+function Assert-ServerHttpResponse {
+    $httpState = Wait-ServerHttpResponse -Uri $serverUri
+    if (-not $httpState.Succeeded) {
+        throw "Server process is running, but $serverUri did not respond: $($httpState.FailureReason)"
     }
-    $bunPath = $bunCommand.Source
+    Write-Status "HTTP state: uri=$serverUri; status=$($httpState.StatusCode)"
 }
-Write-Log "Bun path: $bunPath"
 
-# --- Build (skip if up-to-date) ---
-if (Test-BuildUptodate) {
-    Write-Log 'Build artifacts are up-to-date. Skipping build.'
-}
-else {
-    Write-Log 'Running build...'
-    $buildOutput = & $bunPath run build 2>&1
-    $buildExitCode = $LASTEXITCODE
-    $buildOutput | ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
+function Invoke-ServerWithPm2 {
+    param(
+        [Parameter(Mandatory = $true)][string]$Pm2Path,
+        [Parameter(Mandatory = $true)][string]$ServerJs
+    )
 
-    if ($buildExitCode -ne 0) {
-        Write-Log '[ERROR] Build failed.'
-        Write-Error "Build failed. See log: $logPath"
-        exit 1
+    $before = Get-Pm2AppState -Pm2Path $Pm2Path -AppName $appName
+    if (-not $before.QuerySucceeded) {
+        throw $before.FailureReason
     }
-}
+    Write-Status (Format-Pm2AppState -State $before)
 
-# --- Verify build artifact ---
-$serverJs = Join-Path -Path $PSScriptRoot -ChildPath 'server-dist\server.js'
-if (-not (Test-Path -LiteralPath $serverJs)) {
-    Write-Log '[ERROR] server-dist/server.js not found after build.'
-    Write-Error "server-dist/server.js not found after build."
-    exit 1
-}
-
-# --- Start via PM2 (preferred) ---
-if (Test-Path -LiteralPath $pm2Path) {
-    Write-Log 'Stopping existing PM2 app if any...'
-    & $pm2Path delete nanase-toolbox 2>&1 |
-        ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
-
-    Write-Log 'Starting PM2 app...'
-    & $pm2Path start $serverJs --name 'nanase-toolbox' --update-env 2>&1 |
-        ForEach-Object { Add-Content -LiteralPath $logPath -Value $_ -Encoding UTF8 }
-
-    if ($LASTEXITCODE -eq 0) {
-        Remove-Item Env:SAKURA_AI_TOKEN -ErrorAction SilentlyContinue
-        Write-Log '[OK] PM2 start succeeded.'
-        Write-Host '[OK] Server started under PM2 as "nanase-toolbox".'
-        Write-Log '===== start-server.ps1 end ====='
-        exit 0
+    if ($before.Exists) {
+        $action = 'restart'
+        $arguments = @('restart', $appName, '--update-env')
+    }
+    else {
+        $action = 'start'
+        $arguments = @('start', $ServerJs, '--name', $appName, '--update-env')
     }
 
-    Write-Log '[WARN] PM2 start failed, falling back to direct node.'
+    Write-Status "PM2 action: $action"
+    $result = Invoke-Pm2Command -Pm2Path $Pm2Path -Pm2Arguments $arguments
+    if ($result.ExitCode -ne 0) {
+        throw (Get-Pm2CommandFailureReason -Result $result)
+    }
+
+    $after = Wait-Pm2AppState -Pm2Path $Pm2Path -AppName $appName -ExpectedStatus 'online'
+    Write-Status (Format-Pm2AppState -State $after)
+    if (-not $after.QuerySucceeded) {
+        throw $after.FailureReason
+    }
+    if (-not $after.Exists -or $after.Status -ne 'online') {
+        $errorLines = @(Get-Pm2ErrorLogSummary -Path $after.ErrorLogPath)
+        if ($errorLines.Count -gt 0) {
+            Write-OutputLinesToLog -Lines $errorLines
+            throw "PM2 action '$action' did not reach online state. Recent error: $($errorLines -join ' | ')"
+        }
+        throw "PM2 action '$action' did not reach online state."
+    }
+
+    Assert-ServerHttpResponse
+    Write-Status "[OK] Server $($action)ed under PM2."
 }
 
-# --- Fallback: direct node ---
-Write-Log 'Starting with node directly (fallback)...'
-Start-Process -FilePath 'node' -ArgumentList $serverJs -WindowStyle Minimized
-Remove-Item Env:SAKURA_AI_TOKEN -ErrorAction SilentlyContinue
+function Invoke-ServerDirectly {
+    param([Parameter(Mandatory = $true)][string]$ServerJs)
 
-Write-Log '[OK] Server started via node (fallback).'
-Write-Host '[OK] Server started via node (fallback).'
-Write-Log '===== start-server.ps1 end ====='
+    $nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
+    if (-not $nodeCommand) {
+        throw 'PM2 and node.exe were not found. Install Node.js and PM2, then run this script again.'
+    }
+
+    $stdoutPath = Join-Path -Path $PSScriptRoot -ChildPath 'direct-node-output.log'
+    $stderrPath = Join-Path -Path $PSScriptRoot -ChildPath 'direct-node-error.log'
+    Write-Status '[WARN] PM2 was not found. Starting the server directly with node.exe.'
+    $process = Start-Process `
+        -FilePath $nodeCommand.Source `
+        -ArgumentList $ServerJs `
+        -WorkingDirectory $PSScriptRoot `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput $stdoutPath `
+        -RedirectStandardError $stderrPath `
+        -PassThru
+
+    Start-Sleep -Seconds 1
+    $process.Refresh()
+    if ($process.HasExited) {
+        $errorLines = @()
+        if (Test-Path -LiteralPath $stderrPath) {
+            $errorLines = @(Get-Content -LiteralPath $stderrPath -Tail 8)
+        }
+        throw "Direct node process exited with code $($process.ExitCode): $($errorLines -join ' | ')"
+    }
+
+    Write-Status "Direct node state: status=running; pid=$($process.Id)"
+    Assert-ServerHttpResponse
+    Write-Status '[OK] Server started directly with node.exe.'
+}
+
+$scriptExitCode = 0
+Write-LifecycleLog '===== start-server.ps1 begin ====='
+try {
+    Import-SakuraAiToken
+
+    $pm2Path = Join-Path -Path $env:APPDATA -ChildPath 'npm\pm2.cmd'
+    Write-LifecycleLog "PM2 path: $pm2Path"
+
+    $bunPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bun\bin\bun.exe'
+    if (-not (Test-Path -LiteralPath $bunPath)) {
+        $bunCommand = Get-Command bun.exe -ErrorAction SilentlyContinue
+        if (-not $bunCommand) {
+            throw 'Bunが見つかりません。Bunをインストールしてから再実行してください。'
+        }
+        $bunPath = $bunCommand.Source
+    }
+    Write-LifecycleLog "Bun path: $bunPath"
+
+    if (Test-BuildUptodate) {
+        Write-LifecycleLog 'Build artifacts are up-to-date. Skipping build.'
+    }
+    else {
+        Write-Status 'Build state: running'
+        $buildOutput = @(& $bunPath run build 2>&1)
+        $buildExitCode = $LASTEXITCODE
+        Write-OutputLinesToLog -Lines $buildOutput
+        if ($buildExitCode -ne 0) {
+            throw "Build failed with exit code $buildExitCode. See $logPath for details."
+        }
+        Write-Status 'Build state: succeeded'
+    }
+
+    $serverJs = Join-Path -Path $PSScriptRoot -ChildPath 'server-dist\server.js'
+    if (-not (Test-Path -LiteralPath $serverJs)) {
+        throw 'server-dist/server.js was not found after the build.'
+    }
+
+    if (Test-Path -LiteralPath $pm2Path) {
+        Invoke-ServerWithPm2 -Pm2Path $pm2Path -ServerJs $serverJs
+    }
+    else {
+        Invoke-ServerDirectly -ServerJs $serverJs
+    }
+}
+catch {
+    $scriptExitCode = 1
+    Write-Status "[ERROR] Server start failed: $($_.Exception.Message)"
+    Write-Status "[ERROR] Details: $logPath"
+}
+finally {
+    Remove-Item Env:SAKURA_AI_TOKEN -ErrorAction SilentlyContinue
+    Write-LifecycleLog "===== start-server.ps1 end (exitCode=$scriptExitCode) ====="
+}
+
+exit $scriptExitCode
