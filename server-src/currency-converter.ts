@@ -1,9 +1,8 @@
 import type { UnitInterpretation } from './unit-converter';
 import { getUnitMultiplier } from './unit-converter';
 import { parseJapaneseNumber } from './japanese-number';
+import { resolveSakuraModel, SAKURA_AI_CHAT_ENDPOINT } from './sakura-models';
 
-const SAKURA_AI_ENDPOINT = 'https://api.ai.sakura.ad.jp/v1/chat/completions';
-const DEFAULT_SAKURA_AI_MODEL = 'preview/Qwen3-0.6B-cpu';
 const MAX_INPUT_LENGTH = 500;
 
 type Currency = 'USD' | 'JPY';
@@ -193,9 +192,9 @@ async function interpretCurrencyWithSakura(
 	if (!token) {
 		throw new Error('この表現にはSakura AIが必要ですが、トークンが未設定です。READMEの手順で安全に登録してください。');
 	}
-	const model = options.model ?? process.env['SAKURA_AI_MODEL'] ?? DEFAULT_SAKURA_AI_MODEL;
 	const fetchImplementation = options.fetchImplementation ?? fetch;
-	const response = await fetchImplementation(SAKURA_AI_ENDPOINT, {
+	const model = await resolveSakuraModel(token, options.model, fetchImplementation);
+	const response = await fetchImplementation(SAKURA_AI_CHAT_ENDPOINT, {
 		method: 'POST',
 		headers: {
 			'Accept': 'application/json',

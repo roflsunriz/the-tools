@@ -166,6 +166,7 @@ test('トークン設定時はLLMの正規化結果を先に独立検算する',
 
 	const result = await convertCurrency('いちまんえん', 150, 'USD', {
 		token: 'test-token',
+		model: 'test-model',
 		fetchImplementation: mockFetch,
 	});
 
@@ -193,6 +194,7 @@ test('LLMの正規化または計算が一致しない場合は検算済みロ�
 
 		const result = await convertCurrency('いちまんえん', 150, 'USD', {
 			token: 'test-token',
+			model: 'test-model',
 			fetchImplementation: mockFetch,
 		});
 
@@ -217,6 +219,7 @@ test('ローカル解析不能な入力ではLLMの計算不一致を拒否す�
 	await assert.rejects(
 		convertCurrency('四百億米ドルを円に', 150, 'JPY', {
 			token: 'test-token',
+			model: 'test-model',
 			fetchImplementation: mockFetch,
 		}),
 		/独立検算と一致しません/,

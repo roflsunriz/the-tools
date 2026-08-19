@@ -1,5 +1,5 @@
-const SAKURA_AI_ENDPOINT = 'https://api.ai.sakura.ad.jp/v1/chat/completions';
-const DEFAULT_SAKURA_AI_MODEL = 'preview/Qwen3-0.6B-cpu';
+import { resolveSakuraModel, SAKURA_AI_CHAT_ENDPOINT } from './sakura-models';
+
 const MAX_INPUT_LENGTH = 500;
 const MAX_LABEL_LENGTH = 40;
 
@@ -228,9 +228,9 @@ export async function convertUnitWithSakura(
 	if (!token) {
 		throw new Error('Sakura AIトークンが未設定です。READMEの手順で安全に登録してください。');
 	}
-	const model = options.model ?? process.env['SAKURA_AI_MODEL'] ?? DEFAULT_SAKURA_AI_MODEL;
 	const fetchImplementation = options.fetchImplementation ?? fetch;
-	const response = await fetchImplementation(SAKURA_AI_ENDPOINT, {
+	const model = await resolveSakuraModel(token, options.model, fetchImplementation);
+	const response = await fetchImplementation(SAKURA_AI_CHAT_ENDPOINT, {
 		method: 'POST',
 		headers: {
 			'Accept': 'application/json',
