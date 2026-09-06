@@ -35,3 +35,9 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - Prefer editing source files over generated output.
 - Treat `frontend-dist/`, `server-dist/`, and `node_modules/` as generated or local-only directories.
 - Keep changes consistent with the existing split between frontend and server code.
+
+## 時刻入力の方針（2026-09-06確認）
+
+- 時差変換タブの時刻入力は標準の `input type="time"`（`front-src/index.html` の `#time-input`、`step="60"`）を使う。`TimezoneComponent` は `HH:mm` 文字列の読み書きだけで動作するため、アナログ文字盤UIは必須ではない。
+- jQuery製clockpicker（`clockpicker`、`jquery`、`@types/jquery`、`setup-jquery.ts`、動的UMDロード、`.clockpicker-*` CSS）は削除済み。再導入しない。代替ライブラリ検討時は保守性調査（直近リリース、コミット、issue/PR放置、DL/スター、ライセンス、TS型）を先に行うこと。2026年調査では `clocklet`（2020年停止・WTFPL・DL約100/週）を不採用、`clock-timepicker`（DL約49/週・スター2）を利用実績不足、`timepicker-ui`（MIT・0依存・2026-06リリース・DL数千/週）のみ保守性OKだが単一HH:mm入力には過剰、と判断し標準機能を採用した。
+- ビルド後の `frontend-dist` 内の `jquery`/`jQuery` 文字列はBootstrapの受動的な `window.jQuery` 参照であり、自前のjQuery依存ではない。

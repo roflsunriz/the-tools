@@ -1,43 +1,8 @@
 import './style.css';
-import './setup-jquery.ts';
 
 // 依存パッケージ版 bootstrap を node_modules から読み込む
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-// 依存パッケージ版 clockpicker の CSS のみ先に読み込み（JS は動的 import で順序保証）
-import 'clockpicker/dist/bootstrap-clockpicker.min.css';
-// Vite のアセットとして clockpicker の UMD を参照（型定義なし）
-import clockpickerJsUrl from 'clockpicker/dist/jquery-clockpicker.min.js?url';
-
-type ClockpickerAwareGlobal = typeof globalThis & {
-	jQuery?: {
-		fn?: {
-			clockpicker?: unknown;
-		};
-	};
-};
-
-// clockpicker を後でロードするための関数
-function loadClockpicker(): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const s = document.createElement('script');
-		s.src = clockpickerJsUrl;
-		s.async = true;
-		s.onload = () => {
-			// jQuery プラグインが登録されたか軽く検証
-			const clockpickerReadyGlobal = globalThis as ClockpickerAwareGlobal;
-			if (typeof clockpickerReadyGlobal.jQuery?.fn?.clockpicker === 'function') {
-				resolve();
-			} else {
-				resolve();
-			}
-		};
-		s.onerror = () => reject(new Error('clockpicker load failed'));
-		document.head.appendChild(s);
-	});
-}
-
- 
 
 // アプリのクラスを静的 import（コード分割を避け確実に読み込む）
 import { TabController } from './components/TabController.ts';
@@ -80,13 +45,9 @@ const bootstrap = () => {
 };
 
 if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', async () => {
-		await loadClockpicker();
+	document.addEventListener('DOMContentLoaded', () => {
 		bootstrap();
 	});
 } else {
-	(async () => {
-		await loadClockpicker();
-		bootstrap();
-	})();
+	bootstrap();
 }

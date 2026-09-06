@@ -13,7 +13,7 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
-    "types": ["node", "jquery"]
+    "types": ["node"]
   },
   "include": [
     "**/*.d.ts",

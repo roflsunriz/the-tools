@@ -18,9 +18,6 @@ export class TimezoneComponent {
 	public init(): void {
 		this.setCurrentTime();
 		this.setupEventListeners();
-		// jQuery clockpicker 初期化（型なしプラグインのため any キャスト）
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		($ as any)('.clockpicker').clockpicker({ autoclose: true, twelvehour: false, donetext: '完了' });
 	}
 
 	private setupEventListeners(): void {

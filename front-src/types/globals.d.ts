@@ -9,18 +9,8 @@ declare global {
 	var StoveComponent: any;
 	var AlarmComponent: any;
 	var KakakuPriceComponent: any;
-	var $: JQueryStatic;
-	var jQuery: JQueryStatic;
 }
 
-declare module 'clockpicker/dist/jquery-clockpicker.min.js' {
-  const mod: unknown;
-  export default mod;
-}
-declare module 'clockpicker/dist/jquery-clockpicker.min.js?url' {
-  const url: string;
-  export default url;
-}
 declare module '*.css' {
 	const css: string;
 	export default css;

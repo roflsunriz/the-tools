@@ -47,7 +47,7 @@ Register-NanaseToolboxTask.ps1
 
 | レイヤー | 技術 |
 |---------|------|
-| フロントエンド | TypeScript, Vite, Bootstrap 5, Chart.js, jQuery |
+| フロントエンド | TypeScript, Vite, Bootstrap 5, Chart.js（時刻入力は標準 `input type="time"`） |
 | バックエンド | Express (Node.js), TypeScript |
 | パッケージ管理 | Bun |
 
