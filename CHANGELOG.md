@@ -33,4 +33,4 @@
 
 ### Removed
 
-- jQueryへの依存をなくし、追加のライブラリを増やさずに時刻を選択できるように、時差変換タブの時刻入力をjQuery製clockpickerから標準の `input type="time"` へ置き換え、`jquery`、`clockpicker`、`@types/jquery` を削除した。
+- jQueryへの依存をなくすため、時差変換タブの時刻入力をjQuery製clockpickerからjQuery不要の `timepicker-ui` へ置き換え、`jquery`、`clockpicker`、`@types/jquery` を削除した。

@@ -1,3 +1,5 @@
+import { TimepickerUI } from 'timepicker-ui';
+
 export class TimezoneComponent {
 	private dateInput!: HTMLInputElement;
 	private timeInput!: HTMLInputElement;
@@ -5,6 +7,7 @@ export class TimezoneComponent {
 	private convertButton!: HTMLElement;
 	private resultDiv!: HTMLElement;
 	private resetButton!: HTMLElement;
+	private timePicker: TimepickerUI | null = null;
 
 	constructor() {
 		this.dateInput = document.getElementById('date-input') as HTMLInputElement;
@@ -18,6 +21,24 @@ export class TimezoneComponent {
 	public init(): void {
 		this.setCurrentTime();
 		this.setupEventListeners();
+		this.setupTimePicker();
+	}
+
+	private setupTimePicker(): void {
+		this.timePicker = new TimepickerUI(this.timeInput, {
+			clock: { type: '24h' },
+			ui: { editable: true },
+			labels: { ok: '完了', cancel: 'キャンセル' },
+			callbacks: { onConfirm: () => this.syncInputFromPicker() }
+		});
+		this.timePicker.create();
+		this.timePicker.setValue(this.timeInput.value, false);
+	}
+
+	private syncInputFromPicker(): void {
+		if (this.timePicker === null) return;
+		const { hour, minutes } = this.timePicker.getValue();
+		this.timeInput.value = `${hour.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
 	}
 
 	private setupEventListeners(): void {
@@ -37,6 +58,7 @@ export class TimezoneComponent {
 		const minutes = String(now.getMinutes()).padStart(2, '0');
 		this.dateInput.value = `${year}-${month}-${day}`;
 		this.timeInput.value = `${hours}:${minutes}`;
+		this.timePicker?.setValue(this.timeInput.value, false);
 	}
 
 	private convertTimezone(): void {

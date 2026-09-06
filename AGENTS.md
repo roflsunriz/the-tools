@@ -38,6 +38,8 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 
 ## 時刻入力の方針（2026-09-06確認）
 
-- 時差変換タブの時刻入力は標準の `input type="time"`（`front-src/index.html` の `#time-input`、`step="60"`）を使う。`TimezoneComponent` は `HH:mm` 文字列の読み書きだけで動作するため、アナログ文字盤UIは必須ではない。
-- jQuery製clockpicker（`clockpicker`、`jquery`、`@types/jquery`、`setup-jquery.ts`、動的UMDロード、`.clockpicker-*` CSS）は削除済み。再導入しない。代替ライブラリ検討時は保守性調査（直近リリース、コミット、issue/PR放置、DL/スター、ライセンス、TS型）を先に行うこと。2026年調査では `clocklet`（2020年停止・WTFPL・DL約100/週）を不採用、`clock-timepicker`（DL約49/週・スター2）を利用実績不足、`timepicker-ui`（MIT・0依存・2026-06リリース・DL数千/週）のみ保守性OKだが単一HH:mm入力には過剰、と判断し標準機能を採用した。
+- 時差変換タブの時刻入力は `timepicker-ui`（`front-src/index.html` の `#time-input`＝`type="text"` に `TimezoneComponent.setupTimePicker()` でアタッチ）を使う。24時間制アナログ文字盤・日本語ボタン（完了／キャンセル）・手入力可（`ui.editable`）で旧clockpicker相当の操作を維持する。確定時は `onConfirm` で `getValue()` を `HH:mm` に正規化してinputへ書き込み、リセット時は `setValue()` で両者を同期する（ライブラリのinput自動反映には依存しない）。
+- jQuery製clockpicker（`clockpicker`、`jquery`、`@types/jquery`、`setup-jquery.ts`、動的UMDロード、`.clockpicker-*` CSS）は削除済み。再導入しない。代替に標準 `input type="time"` ではなくライブラリを使うことがユーザー指示で確定している。
+- `timepicker-ui` 採用理由（2026-09-06に一次情報で確認）：MIT・ランタイム依存0（lockfileの推移依存なし）・型定義同梱・4.4.0（2026-06-10）・直近push 2026-07-07・スター97・週DL数千。open 10件はdependabot PRとv5要望のみで重大バグ放置なし。`clocklet`（2020年停止・WTFPL・DL約100/週）、`clock-timepicker`（DL約49/週・スター2）は不採用。
 - ビルド後の `frontend-dist` 内の `jquery`/`jQuery` 文字列はBootstrapの受動的な `window.jQuery` 参照であり、自前のjQuery依存ではない。
+- ブラウザ検証の要点：preview配信（`vite preview`はIPv6 localhostにbindするためURLは `http://localhost:<port>` を使う、`127.0.0.1` は拒否される）＋CDP。file直開きではESモジュールが動かない。ピッカーは非表示タブ内なので先に `[data-tab="timezone"]` をマウスクリックし、Enterキー投入で `.tp-ui-modal`（`role="dialog"`）の開閉を確認する。`Runtime.evaluate` が不安定な場合はDOMドメイン（querySelector/focus/getOuterHTML）と `Input.dispatchKeyEvent` だけで検証できる。

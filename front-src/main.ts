@@ -3,6 +3,8 @@ import './style.css';
 // 依存パッケージ版 bootstrap を node_modules から読み込む
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+// 時刻ピッカー（timepicker-ui）のスタイル読み込み
+import 'timepicker-ui/main.css';
 
 // アプリのクラスを静的 import（コード分割を避け確実に読み込む）
 import { TabController } from './components/TabController.ts';

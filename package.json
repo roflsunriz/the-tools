@@ -23,7 +23,8 @@
     "@mdi/js": "^7.4.47",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "timepicker-ui": "^4.4.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
