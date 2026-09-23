@@ -43,3 +43,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - `timepicker-ui` 採用理由（2026-09-06に一次情報で確認）：MIT・ランタイム依存0（lockfileの推移依存なし）・型定義同梱・4.4.0（2026-06-10）・直近push 2026-07-07・スター97・週DL数千。open 10件はdependabot PRとv5要望のみで重大バグ放置なし。`clocklet`（2020年停止・WTFPL・DL約100/週）、`clock-timepicker`（DL約49/週・スター2）は不採用。
 - ビルド後の `frontend-dist` 内の `jquery`/`jQuery` 文字列はBootstrapの受動的な `window.jQuery` 参照であり、自前のjQuery依存ではない。
 - ブラウザ検証の要点：preview配信（`vite preview`はIPv6 localhostにbindするためURLは `http://localhost:<port>` を使う、`127.0.0.1` は拒否される）＋CDP。file直開きではESモジュールが動かない。ピッカーは非表示タブ内なので先に `[data-tab="timezone"]` をマウスクリックし、Enterキー投入で `.tp-ui-modal`（`role="dialog"`）の開閉を確認する。`Runtime.evaluate` が不安定な場合はDOMドメイン（querySelector/focus/getOuterHTML）と `Input.dispatchKeyEvent` だけで検証できる。
+
+## 依存監査で確定した事項（2026-09-23）
+
+- `bun audit fix` だけでは js-yaml、qs の脆弱版が上流の厳密な依存範囲で残る。`package.json` の既存 `overrides` と `bun.lock` を同時に更新し、`bun audit` と関連テスト・ビルドで確認する。上流が安全版を取り込んだ場合は override の必要性を再評価する。
