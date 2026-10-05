@@ -47,3 +47,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 ## 依存監査で確定した事項（2026-09-23）
 
 - `bun audit fix` だけでは js-yaml、qs の脆弱版が上流の厳密な依存範囲で残る。`package.json` の既存 `overrides` と `bun.lock` を同時に更新し、`bun audit` と関連テスト・ビルドで確認する。上流が安全版を取り込んだ場合は override の必要性を再評価する。
+
+## 開発依存監査の注意（2026-10-05）
+
+- brace-expansion の3件のAdvisoryに対し、5系は5.0.12で該当範囲を外れる。既存親依存の5系範囲を保ち、package.jsonのoverrideとbun.lockを同時に更新する。監査の省略や閾値緩和で対応せず、CIと同じBunで固定install・監査・既存品質確認を行う。詳細はverification.md。
