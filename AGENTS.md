@@ -28,7 +28,7 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 - `frontend-dist/`: generated frontend build output from Vite.
 - `server-dist/`: generated server build output from TypeScript.
 - `数独/`: standalone HTML pages and local demos.
-- Root config files such as `vite.config.ts`, `tsconfig*.json`, and `eslint.config.js` control the build, type-checking, and linting setup.
+- Root config files such as `vite.config.mts`, `tsconfig*.json`, and `eslint.config.js` control the build, type-checking, and linting setup.
 
 ## Working Notes
 
@@ -51,3 +51,9 @@ Get-Content -Raw -LiteralPath .\COMMON-AGENTS.md
 ## 開発依存監査の注意（2026-10-05）
 
 - brace-expansion の3件のAdvisoryに対し、5系は5.0.12で該当範囲を外れる。既存親依存の5系範囲を保ち、package.jsonのoverrideとbun.lockを同時に更新する。監査の省略や閾値緩和で対応せず、CIと同じBunで固定install・監査・既存品質確認を行う。詳細はverification.md。
+
+## メジャー更新の互換性（2026-10-12確認）
+
+- typescript-eslint 8.71.1のpeer範囲は `>=4.8.4 <6.1.0`。TypeScript 7.0.2ではパーサーが明示的にエラーとなるため、対応範囲内の6.0.3を `~6.0.3` で使う。更新時は対応範囲と実際のlintを確認する。
+- TypeScript 6のサーバー設定は `module`／`moduleResolution` ともNode16を使い、package.jsonのCommonJS既定を保つ。Vite 8は `vite.config.mts` と `build.rolldownOptions` を使う。`.ts` のESM構文をCommonJSとして読み込む設定では将来のnative loaderに関する警告が出る。
+- ESLint設定が参照する `@eslint/js` は直接の開発依存とし、ESLintと同じ10系へ合わせる。両パッケージのminor番号は一致しないため、レジストリで個別に確認する。

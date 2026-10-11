@@ -2,7 +2,7 @@
 
 ## Dependabot 自動処理（2026-09-23）
 
-`.github/workflows/dependabot-automation.yml` を actionlint で検査し、PR 用 workflow 名（CI）と一致することを確認する。Dependabot の patch／minor かつ全 PR チェック成功の場合だけ取り込み、major・古い SHA・再失敗は残す。
+`.github/workflows/dependabot-automation.yml` を actionlint で検査し、PR 用 workflow 名（CI）と一致することを確認する。Dependabot の patch／minor／major かつ全 PR チェック成功の場合だけ取り込み、古い SHA・再失敗は残す。コードや設定の移行が必要な場合は手動で修正する。
 
 実際の Dependabot PR がまだない場合、動作経路は未検証として扱う。実 PR 発生後に自動化ジョブ、CI の再試行、マージ結果を確認する。
 
@@ -27,3 +27,13 @@
 - ローカルでlint・type-check・27件の既存テスト（0 failed）・buildが成功。GitHubの修復headと最終main SHAのCIは公開後に別途確認する。
 
 - 現設定でIssues有効をAPIから確認。SUPPORTの旧無効説明を訂正し、2フォームのYAML構造・ID一意性・プロジェクト固有の環境項目を検証。the-toolsの外部受付不可方針は維持し管理者用の記録と明示。
+
+## 2026-10-12: open PR #1〜#5の統合・互換性確認
+
+- 各PRのheadをmainへ通常のマージコミットで統合し、依存指定の競合はすべての更新を保って解消した。生成物のbun.lockはCIと同じBun 1.3.8で再生成した。
+- 最新依存の確認後、TypeScript 7.0.2ではtypescript-eslint 8.71.1が起動を拒否することを確認した。peer範囲 `>=4.8.4 <6.1.0` に収まる6.0.3を採用し、Node16モジュール解決でサーバーをビルドした。
+- PostCSSを8.5.29へ更新してsource-map-js 1.2.2を取り込み、[GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)を解消した。固定installと `bun audit` は成功し、既知脆弱性0件。`bun outdated` の更新残は未対応のTypeScript 7のみ。
+- lint・フロントエンド型チェック・27件の既存テスト・サーバー／フロントエンドビルドが成功。Viteの非推奨APIとnative loader警告を設定移行で解消した。formatスクリプトは既存package.jsonにないため、Prettier 3.9.10の一時CLIで変更した設定5ファイルを整形・検査した。
+- 生成したExpressサーバーを一時ポートで起動し、生成HTMLの配信、`400おくどる`の実API変換、不正リクエストの400応答を確認した。通常利用中のサーバーは再起動していない。
+- 専用ヘッドレスChrome 154で1366×768・390×844を検証した。両画面で10タブの切り替え、時刻ピッカーのEnter開閉・キャンセル・07:05への確定・時差変換・リセット、充電計算の両入力方式と不正入力拒否が成功。未捕捉例外0件。外部レートとクレジット一覧は検証用固定応答に置き換え、実サービスへの通信や認証付きSakura AIの実呼び出しは行っていない。
+- ブラウザ検証ではピッカーの開閉アニメーション完了とスクロール位置を待つ。DOMの生成直後や滑らかなスクロール中にクリックすると、実際のクリック対象と検証対象がずれる。

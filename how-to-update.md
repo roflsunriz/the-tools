@@ -4,12 +4,12 @@
 
 - PowerShell 5.1以上
 - Bun 1.3.8
-- Node.js
+- Node.js 20.19以上の20系、22.13以上の22系、または24以上（ESLintとViteの実行要件を満たす版）
 
 ## 更新
 
 ```powershell
-bun install
+bun install --frozen-lockfile
 bun run lint
 bun run type-check
 bun run test
@@ -44,7 +44,7 @@ Sakura AIを使う最初の変換では、認証付き `GET /v1/models` から�
 
 ## Dependabot PR の更新
 
-前提は `.github/dependabot.yml` と PR 用 CI（CI）です。更新 PR の head SHA と `gh pr checks <PR番号>` の結果を確認してください。patch／minor は全チェック成功後に自動取り込みされます。初回 CI 失敗は failed jobs のみを 1 回再実行し、再失敗時は指定した lockfile を再生成し、CI を再実行します。
+前提は `.github/dependabot.yml` と PR 用 CI（CI）です。更新 PR の head SHA と `gh pr checks <PR番号>` の結果を確認してください。patch／minor／major は全チェック成功後に自動取り込みされます。初回 CI 失敗は failed jobs のみを 1 回再実行し、再失敗時は指定した lockfile を再生成し、CI を再実行します。コードや設定の移行が必要な更新は、手動で修正して検証してください。
 
 設定を変えたときは `actionlint .github/workflows/dependabot-automation.yml` と実際の PR の Actions 結果を確認します。問題があれば呼び出し先の共通 workflow SHA を直前の検証済み値へ戻すコミットを push します。取り込まれた依存更新に問題があれば通常の revert コミットで復旧します。
 
@@ -53,3 +53,9 @@ Sakura AIを使う最初の変換では、認証付き `GET /v1/models` から�
 `package.json` の `overrides` は、上流パッケージが js-yaml、qs の旧版を固定している間に安全な patch 版を選ぶために使う。上流が安全版を採用したら override を減らせるか確認する。更新時は `bun install --lockfile-only --ignore-scripts`、`bun install --frozen-lockfile`、`bun audit` を実行し、該当する lint・型・テスト・ビルドを確認する。問題があれば更新コミットを revert し、lockfile と package.json を同じ版へ戻す。
 
 CI 完了より Dependabot の分類が遅れる場合は、`callback_workflow_file` が指す呼び出し側 workflow を `workflow_dispatch` し、同じ PR 番号・head SHA・全チェックを再確認する。呼び出し側のファイル名を変える際はこの入力も一緒に更新する。
+
+## TypeScript・Viteの互換性（2026-10-12確認）
+
+typescript-eslint 8.71.1はTypeScript 7を扱えないため、TypeScriptは対応範囲内の6.0.3（`~6.0.3`）を使います。更新時はパーサーの対応範囲とlintの実行結果を確認し、対応範囲を超える版へ変更しないでください。
+
+サーバーの型チェック・ビルドには `tsconfig.server.json` のNode16モジュール解決を使います。Vite 8の設定は `vite.config.mts` を正本とし、`build.rolldownOptions` で入力ページを指定します。設定変更後はlint・型チェック・ビルドと、時差変換の時刻ピッカーを確認してください。

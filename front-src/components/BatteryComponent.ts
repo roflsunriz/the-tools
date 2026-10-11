@@ -40,7 +40,7 @@ export class BatteryComponent {
 	private calculateChargingTime(): void {
 		const capacity = parseFloat(this.capacityInput.value);
 		const currentCharge = parseFloat(this.currentChargeInput.value);
-		let power = 0;
+		let power: number;
 
 		const checked = document.querySelector('input[name="power-mode"]:checked') as HTMLInputElement | null;
 		const isWattsMode = (checked?.value ?? '') === 'watts';

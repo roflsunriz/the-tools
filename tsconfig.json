@@ -15,11 +15,7 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": [
-    "**/*.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
-  ],
+  "include": ["**/*.d.ts", "**/*.ts", "**/*.mts", "**/*.tsx"],
   "exclude": [
     ".vscode",
     "frontend-dist",
@@ -29,4 +25,3 @@
     "eslint.config.js"
   ]
 }
-
