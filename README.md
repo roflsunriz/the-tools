@@ -43,14 +43,6 @@ bun install
 - **ミニマムJSON** — JSON のキー短縮・minify によるトークン削減
 - **価格推移** — [kakaku.com](https://kakaku.com) の価格推移グラフ表示（サーバーサイドプロキシ経由）
 
-## 技術スタック
-
-| レイヤー | 技術 |
-|---------|------|
-| フロントエンド | TypeScript, Vite, Bootstrap 5, Chart.js, timepicker-ui |
-| バックエンド | Express (Node.js), TypeScript |
-| パッケージ管理 | Bun |
-
 ## Sakura AI単位変換の設定
 
 通貨変換では「400おくどる」「2.5 billion dollars」などをそのまま入力できます。一般的な表記はローカルで解析し、曖昧な自然文だけSakura AIで補完します。AIパラメーター単位変換では、全角・半角や空白の違いを考慮し、「億単位で」「小数2桁で」などの表示方法を文章で指定できます。Sakura AIは入力の解釈だけを行い、数値計算はサーバー側の確定的な処理で実行します。
@@ -85,37 +77,11 @@ Sakura AIのコントロールパネルで発行したアカウントトーク�
 bun install
 ```
 
-## 開発
-
-```bash
-# サーバーとフロントエンドの同時ビルド
-bun run build
-
-# フロントエンドのみビルド
-bun run build:frontend
-
-# サーバーのみビルド
-bun run build:server
-
-# 本番起動
-bun run start
-```
-
-サーバーは `http://localhost:65505/` で起動します。
-
-## プロジェクト構成
-
-```
-front-src/        # フロントエンドソース（コンポーネント、スタイル、HTML）
-server-src/       # サーバーソース（Express API）
-frontend-dist/    # Vite ビルド出力
-server-dist/      # TypeScript コンパイル出力
-```
-
 ## プロジェクトの用途
 
 このリポジトリは個人利用を目的としたプロジェクトです。外部からのコントリビューションは受け付けていません。
 
-## 依存更新の自動処理
 
-Dependabot は対象の依存関係を毎週確認します。patch／minor／major 更新は PR のチェック（CI）が成功した後に自動で squash merge されます。CI の失敗ジョブは 1 回だけ再実行します。再失敗時は指定した lockfile を再生成し、CI を再実行します。コードや設定の移行が必要な更新は、手動で修正して検証します。
+## 開発・運用の知見
+
+開発環境、内部構成、検証コマンドと運用上の注意は [findings.md](findings.md) を参照してください。更新・復旧の手順と検証記録は、同ファイルから案内しています。
