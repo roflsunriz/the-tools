@@ -19,6 +19,8 @@
 ### Changed
 
 
+- GitHub Actions の月間利用時間を抑えるため、Dependabot version update と自動マージを毎週・即時処理から毎月28日（Asia/Tokyo）の月末一括処理へ変更した。
+
 - 共通指針と固有の知見を区別して参照できるよう、AGENTS・READMEなどの実現手段、例外と調査知見を `findings.md` へ分離し、着手前の全文確認と更新先を統一した。
 - 開発依存の更新を取り込むため、Dependabot PR #1〜#5をmainへ統合し、ESLint 10・globals 17・Node.js型定義26・Vite 8へ更新した。パーサーとプラグインを8.71.1へ揃え、TypeScriptは対応範囲内の6.0.3へ、Expressは5.3.0へ更新した。
 - 更新後の設定警告と非互換を解消するため、サーバーのモジュール解決をNode16へ、Vite設定をESモジュールとRolldownの設定APIへ移行した。
