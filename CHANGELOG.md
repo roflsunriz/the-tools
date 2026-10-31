@@ -8,6 +8,7 @@
 
 ### Security
 
+- body-parser、qs、minimatch、serialize-javascriptの既知の脆弱性を解消するため、間接依存を修正版へ更新した。
 - source-map-jsのサービス妨害脆弱性を解消するため、PostCSSを修正版を参照する8.5.29へ更新し、nanoidの固定版とBunロックファイルも更新した。
 - 開発依存の brace-expansion によるCI監査失敗を解消するため、既存5系overrideを修正版5.0.12へ更新し、Bunのロックファイルを再生成した。監査条件と製品テストは維持した。
 
