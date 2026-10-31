@@ -1,5 +1,10 @@
 # 検証手順
 
+## 依存監査（2026-10-31）
+
+- body-parser、qs、minimatch、serialize-javascriptを修正版に更新し、Bun 1.3.8の固定インストール、監査0件、lint、型検査、27テストとサーバー・フロントエンドのbuildを確認した。
+- 既存サーバーと競合しないよう分離したloopbackの検証プロセスで起動し、合成入力の通貨変換がローカルで成功した。ローカルpreviewでは時刻選択と時差計算を確認した。
+
 ## Dependabot 自動処理（2026-09-23）
 
 `.github/workflows/dependabot-automation.yml` を actionlint で検査し、PR 用 workflow 名（CI）と一致することを確認する。Dependabot の patch／minor／major かつ全 PR チェック成功の場合だけ取り込み、古い SHA・再失敗は残す。コードや設定の移行が必要な場合は手動で修正する。
