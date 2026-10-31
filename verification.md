@@ -1,5 +1,9 @@
 # 検証手順
 
+## `@typescript-eslint` 更新（2026-10-31）
+
+- パーサーとプラグインを8.72.1へそろえ、Bun 1.3.8でpeer警告のない固定インストール、監査0件、lint、型検査、27テストとbuildを確認した。
+
 ## 依存監査（2026-10-31）
 
 - body-parser、qs、minimatch、serialize-javascriptを修正版に更新し、Bun 1.3.8の固定インストール、監査0件、lint、型検査、27テストとサーバー・フロントエンドのbuildを確認した。

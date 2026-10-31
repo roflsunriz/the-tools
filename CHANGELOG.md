@@ -19,6 +19,7 @@
 
 ### Changed
 
+- ESLintプラグインとパーサーの互換性を保つため、`@typescript-eslint` の両方を8.72.1へそろえた。
 
 - GitHub Actions の月間利用時間を抑えるため、Dependabot version update と自動マージを毎週・即時処理から毎月28日（Asia/Tokyo）の月末一括処理へ変更した。
 
