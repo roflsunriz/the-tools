@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- READMEでfindings.mdへの案内に置き換わっていた本文を復元し、構成・開発・検証の説明をREADMEから直接読めるようにした。移動後のREADME更新は保持した。
+
+
 ### Security
 
 - body-parser、qs、minimatch、serialize-javascriptの既知の脆弱性を解消するため、間接依存を修正版へ更新した。
